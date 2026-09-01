@@ -1,0 +1,5 @@
+{
+  "/report/track/page": "app/report/track/page.js",
+  "/routes/page": "app/routes/page.js",
+  "/shelters/page": "app/shelters/page.js"
+}
