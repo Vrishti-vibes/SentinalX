@@ -62,7 +62,7 @@ export default function SheltersScreen() {
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
       {/* 1. Header Bar */}
       <header className="h-14 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-        {/* Left: Red Diamond Logo + SentinelX */}
+        {/* Left: Red Diamond Logo + SentinalX */}
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-6 h-6 flex items-center justify-center">
             <svg
@@ -80,7 +80,7 @@ export default function SheltersScreen() {
             </svg>
           </div>
           <span className="text-[17px] font-bold text-[#991b1b] tracking-tight">
-            SentinelX
+            SentinalX
           </span>
         </Link>
 

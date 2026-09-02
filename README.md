@@ -230,31 +230,28 @@ npm run build
 
 The implemented application routes compile successfully.
 
-🗺️ Future Scope
+## 📊 Live Data Status & Scientific Provenance
 
-SentinalX can be extended into a production-ready regional disaster intelligence platform through:
+| Data Stream | Provider / Source | Status | Description |
+|---|---|---|---|
+| **Weather & Rainfall** | Open-Meteo API | `LIVE` | Real-time precipitation and antecedent 24h/72h rainfall |
+| **Safe Road Routing** | OpenStreetMap / OSRM | `LIVE` | Real road network routing with SentinalX risk layer overlay |
+| **Historical Landslides** | GSI Bhusanket, ISRO Atlas, NASA GLC | `VERIFIED` | 25 verified NER events across all 8 states (`NER-LANDSLIDE-v3`) |
+| **Auxiliary ML Predictor** | SentinalX-NER-ML-v3 | `LIMITED_DATA` | Tabular logistic & covariate ensemble (Auxiliary research signal) |
+| **Geotechnical Risk** | 6-Factor Operational Engine | `PROTOTYPE` | Transparent heuristic score (Rain 25%, Soil 20%, Pore Pressure 20%, Slope 15%, Seismic 10%, Reports 10%) |
+| **Seismic Indicator** | USGS Earthquake API | `LIVE` | 7-day regional seismic event monitoring |
+| **Satellite Catalog** | Copernicus Data Space (ESA) | `FALLBACK` | Sentinel-1/2 Earth observation catalog metadata |
+| **In-Situ Sensors** | Geotechnical Telemetry Grid | `DEMO` | Prototype piezometer, tiltmeter, and soil moisture sensor nodes |
 
-Real-time IMD rainfall integration
-Satellite imagery integration
-Soil-moisture sensor integration
-Terrain and slope analysis
-Historical landslide datasets
-Trained and validated ML risk models
-Real-time GIS layers
-SMS-based emergency notifications
-Multilingual alerts
-Offline-first field reporting
-Authority escalation workflows
-Cloud-based synchronization
-Advanced risk forecasting
-Integration with relevant government disaster-management systems
-🔐 Safety & Responsible AI
+---
 
-SentinalX is designed as a decision-support and early-warning platform, not as a replacement for official disaster-management authorities.
+## 🔐 Safety & Responsible AI Disclaimers
 
-Risk predictions and alerts should be validated against appropriate government, meteorological, geological and field data before being used for operational decisions.
+- **Decision-Support Prototype**: SentinalX is designed as a disaster intelligence decision-support platform, not as a replacement for official state disaster management authorities (SDMA/NDMA).
+- **ML Transparency**: Machine learning predictions operate under `LIMITED_DATA` status ($37$ real samples) with a documented four-pillar leakage audit (temporal, spatial, incident, and duplicate leakage all `False`).
+- **No Fabricated Telemetry**: In-situ sensor readings and satellite displacement data are transparently labeled as `DEMO` or `METADATA` when live physical sensors are not connected.
 
-The MVP currently uses demonstration/mock data where live integrations are not yet implemented.
+---
 
 👥 Team — SentinalX
 

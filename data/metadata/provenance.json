@@ -1,0 +1,23 @@
+{
+  "dataset_version": "NER-LANDSLIDE-v1",
+  "total_samples": 25,
+  "positive_events": 17,
+  "negative_controls": 8,
+  "states_covered": [
+    "Arunachal Pradesh",
+    "Assam",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Sikkim",
+    "Tripura"
+  ],
+  "sources": [
+    "GSI_BHUSANKET",
+    "ISRO_NRSC_LANDSLIDE_ATLAS",
+    "NASA_GLOBAL_LANDSLIDE_CATALOG",
+    "OPEN_METEO_HISTORICAL_ARCHIVE"
+  ],
+  "generated_at": "2026-09-02T23:20:00Z"
+}

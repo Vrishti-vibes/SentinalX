@@ -1,0 +1,1157 @@
+{
+  "datasetVersion": "NER-LANDSLIDE-v3",
+  "generationTimestamp": "2026-09-03T00:10:00Z",
+  "totalSamples": 37,
+  "positiveEvents": 25,
+  "negativeControls": 12,
+  "reproducibilityStatus": "VERIFIED",
+  "featureLineage": [
+    {
+      "sampleId": "SX-HIST-SK-001",
+      "clusterId": "CLUSTER_TEESTA_MANGAN",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2023-SK-TEESTA",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Sikkim",
+        "district": "Mangan (North Sikkim)",
+        "coordinates": {
+          "lat": 27.544,
+          "lon": 88.583
+        }
+      },
+      "temporalAnchor": "2023-10-04",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-SK-002",
+      "clusterId": "CLUSTER_GANGTOK",
+      "source": "ISRO_NRSC_LANDSLIDE_ATLAS",
+      "sourceRecordId": "ISRO-ATLAS-SK-010",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Sikkim",
+        "district": "Gangtok",
+        "coordinates": {
+          "lat": 27.331,
+          "lon": 88.613
+        }
+      },
+      "temporalAnchor": "2020-07-10",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-SK-003",
+      "clusterId": "CLUSTER_SINGTAM",
+      "source": "NASA_GLOBAL_LANDSLIDE_CATALOG",
+      "sourceRecordId": "NASA-GLC-7281",
+      "provenanceClassification": "DIRECT_SOURCE_RECORD",
+      "geographicAnchor": {
+        "state": "Sikkim",
+        "district": "Namchi (South Sikkim)",
+        "coordinates": {
+          "lat": 27.289,
+          "lon": 88.528
+        }
+      },
+      "temporalAnchor": "2019-06-25",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-SK-004",
+      "clusterId": "CLUSTER_DZONGU",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2024-SK-DZONGU",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Sikkim",
+        "district": "Mangan (North Sikkim)",
+        "coordinates": {
+          "lat": 27.685,
+          "lon": 88.652
+        }
+      },
+      "temporalAnchor": "2024-06-13",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AR-001",
+      "clusterId": "CLUSTER_TAWANG",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2022-AR-TWG14",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Arunachal Pradesh",
+        "district": "Tawang",
+        "coordinates": {
+          "lat": 27.586,
+          "lon": 91.859
+        }
+      },
+      "temporalAnchor": "2022-06-18",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AR-002",
+      "clusterId": "CLUSTER_BHALUKPONG",
+      "source": "ISRO_NRSC_LANDSLIDE_ATLAS",
+      "sourceRecordId": "ISRO-ATLAS-AR-004",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Arunachal Pradesh",
+        "district": "West Kameng",
+        "coordinates": {
+          "lat": 27.355,
+          "lon": 92.242
+        }
+      },
+      "temporalAnchor": "2021-07-02",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AR-003",
+      "clusterId": "CLUSTER_ITANAGAR",
+      "source": "NASA_GLOBAL_LANDSLIDE_CATALOG",
+      "sourceRecordId": "NASA-GLC-8192",
+      "provenanceClassification": "DIRECT_SOURCE_RECORD",
+      "geographicAnchor": {
+        "state": "Arunachal Pradesh",
+        "district": "Papum Pare",
+        "coordinates": {
+          "lat": 27.129,
+          "lon": 93.616
+        }
+      },
+      "temporalAnchor": "2020-07-10",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AR-004",
+      "clusterId": "CLUSTER_DAPORIJO",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2024-AR-DAPO",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Arunachal Pradesh",
+        "district": "Upper Subansiri",
+        "coordinates": {
+          "lat": 27.812,
+          "lon": 94.135
+        }
+      },
+      "temporalAnchor": "2024-07-08",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AS-001",
+      "clusterId": "CLUSTER_HAFLONG",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2022-AS-HAFLONG",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Assam",
+        "district": "Dima Hasao",
+        "coordinates": {
+          "lat": 25.176,
+          "lon": 93.023
+        }
+      },
+      "temporalAnchor": "2022-05-15",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AS-002",
+      "clusterId": "CLUSTER_GUWAHATI",
+      "source": "ISRO_NRSC_LANDSLIDE_ATLAS",
+      "sourceRecordId": "ISRO-ATLAS-AS-001",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Assam",
+        "district": "Kamrup Metropolitan",
+        "coordinates": {
+          "lat": 26.144,
+          "lon": 91.736
+        }
+      },
+      "temporalAnchor": "2021-06-12",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-AS-003",
+      "clusterId": "CLUSTER_SILCHAR",
+      "source": "NASA_GLOBAL_LANDSLIDE_CATALOG",
+      "sourceRecordId": "NASA-GLC-6401",
+      "provenanceClassification": "DIRECT_SOURCE_RECORD",
+      "geographicAnchor": {
+        "state": "Assam",
+        "district": "Cachar",
+        "coordinates": {
+          "lat": 24.833,
+          "lon": 92.802
+        }
+      },
+      "temporalAnchor": "2020-06-02",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-MN-001",
+      "clusterId": "CLUSTER_NONEY",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2022-MN-TUPUL",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Manipur",
+        "district": "Noney",
+        "coordinates": {
+          "lat": 24.819,
+          "lon": 93.639
+        }
+      },
+      "temporalAnchor": "2022-06-30",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-MN-002",
+      "clusterId": "CLUSTER_SENAPATI",
+      "source": "NASA_GLOBAL_LANDSLIDE_CATALOG",
+      "sourceRecordId": "NASA-GLC-5190",
+      "provenanceClassification": "DIRECT_SOURCE_RECORD",
+      "geographicAnchor": {
+        "state": "Manipur",
+        "district": "Senapati",
+        "coordinates": {
+          "lat": 25.267,
+          "lon": 94.025
+        }
+      },
+      "temporalAnchor": "2018-07-29",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-MN-003",
+      "clusterId": "CLUSTER_TAMENGLONG",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2024-MN-TAMENG",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Manipur",
+        "district": "Tamenglong",
+        "coordinates": {
+          "lat": 24.982,
+          "lon": 93.491
+        }
+      },
+      "temporalAnchor": "2024-05-30",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-ML-001",
+      "clusterId": "CLUSTER_SOHRA",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2022-ML-SOHRA",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Meghalaya",
+        "district": "East Khasi Hills",
+        "coordinates": {
+          "lat": 25.298,
+          "lon": 91.702
+        }
+      },
+      "temporalAnchor": "2022-06-17",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-ML-002",
+      "clusterId": "CLUSTER_SHILLONG",
+      "source": "ISRO_NRSC_LANDSLIDE_ATLAS",
+      "sourceRecordId": "ISRO-ATLAS-ML-002",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Meghalaya",
+        "district": "East Khasi Hills",
+        "coordinates": {
+          "lat": 25.578,
+          "lon": 91.893
+        }
+      },
+      "temporalAnchor": "2021-09-08",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-ML-003",
+      "clusterId": "CLUSTER_SONAPUR",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2023-ML-SONAPUR",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Meghalaya",
+        "district": "West Jaintia Hills",
+        "coordinates": {
+          "lat": 25.441,
+          "lon": 92.205
+        }
+      },
+      "temporalAnchor": "2023-06-21",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-MZ-001",
+      "clusterId": "CLUSTER_MELTHUM",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2024-MZ-MELTHUM",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Mizoram",
+        "district": "Aizawl",
+        "coordinates": {
+          "lat": 23.727,
+          "lon": 92.717
+        }
+      },
+      "temporalAnchor": "2024-05-28",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-MZ-002",
+      "clusterId": "CLUSTER_LUNGLEI",
+      "source": "ISRO_NRSC_LANDSLIDE_ATLAS",
+      "sourceRecordId": "ISRO-ATLAS-MZ-001",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Mizoram",
+        "district": "Lunglei",
+        "coordinates": {
+          "lat": 22.889,
+          "lon": 92.738
+        }
+      },
+      "temporalAnchor": "2020-08-14",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-MZ-003",
+      "clusterId": "CLUSTER_CHAMPHAI",
+      "source": "NASA_GLOBAL_LANDSLIDE_CATALOG",
+      "sourceRecordId": "NASA-GLC-7814",
+      "provenanceClassification": "DIRECT_SOURCE_RECORD",
+      "geographicAnchor": {
+        "state": "Mizoram",
+        "district": "Champhai",
+        "coordinates": {
+          "lat": 23.456,
+          "lon": 93.328
+        }
+      },
+      "temporalAnchor": "2021-07-28",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-NL-001",
+      "clusterId": "CLUSTER_KOHIMA",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2021-NL-DZUDZA",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Nagaland",
+        "district": "Kohima",
+        "coordinates": {
+          "lat": 25.675,
+          "lon": 94.108
+        }
+      },
+      "temporalAnchor": "2021-08-20",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-NL-002",
+      "clusterId": "CLUSTER_MOKOKCHUNG",
+      "source": "NASA_GLOBAL_LANDSLIDE_CATALOG",
+      "sourceRecordId": "NASA-GLC-5612",
+      "provenanceClassification": "DIRECT_SOURCE_RECORD",
+      "geographicAnchor": {
+        "state": "Nagaland",
+        "district": "Mokokchung",
+        "coordinates": {
+          "lat": 26.326,
+          "lon": 94.521
+        }
+      },
+      "temporalAnchor": "2019-07-15",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-NL-003",
+      "clusterId": "CLUSTER_PHEK",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2024-NL-PHEK",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Nagaland",
+        "district": "Phek",
+        "coordinates": {
+          "lat": 25.662,
+          "lon": 94.468
+        }
+      },
+      "temporalAnchor": "2024-07-19",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-TR-001",
+      "clusterId": "CLUSTER_AMBASSA",
+      "source": "GSI_BHUSANKET",
+      "sourceRecordId": "GSI-NLFC-2024-TR-AMBASSA",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Tripura",
+        "district": "Dhalai",
+        "coordinates": {
+          "lat": 23.856,
+          "lon": 91.884
+        }
+      },
+      "temporalAnchor": "2024-08-21",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "SX-HIST-TR-002",
+      "clusterId": "CLUSTER_DHARMANAGAR",
+      "source": "ISRO_NRSC_LANDSLIDE_ATLAS",
+      "sourceRecordId": "ISRO-ATLAS-TR-001",
+      "provenanceClassification": "CATALOG_REFERENCE",
+      "geographicAnchor": {
+        "state": "Tripura",
+        "district": "North Tripura",
+        "coordinates": {
+          "lat": 24.215,
+          "lon": 92.158
+        }
+      },
+      "temporalAnchor": "2022-06-19",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 1
+    },
+    {
+      "sampleId": "NER-NEG-001",
+      "clusterId": "CLUSTER_TAWANG",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-AR-TAWANG-20210115",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Arunachal Pradesh",
+        "district": "Tawang",
+        "coordinates": {
+          "lat": 27.586,
+          "lon": 91.859
+        }
+      },
+      "temporalAnchor": "2021-01-15",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-002",
+      "clusterId": "CLUSTER_GANGTOK",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-SK-GANGTOK-20200110",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Sikkim",
+        "district": "Gangtok",
+        "coordinates": {
+          "lat": 27.331,
+          "lon": 88.613
+        }
+      },
+      "temporalAnchor": "2020-01-10",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-003",
+      "clusterId": "CLUSTER_SOHRA",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-ML-SOHRA-20220120",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Meghalaya",
+        "district": "East Khasi Hills",
+        "coordinates": {
+          "lat": 25.298,
+          "lon": 91.702
+        }
+      },
+      "temporalAnchor": "2022-01-20",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-004",
+      "clusterId": "CLUSTER_NONEY",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-MN-NONEY-20220105",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Manipur",
+        "district": "Noney",
+        "coordinates": {
+          "lat": 24.819,
+          "lon": 93.639
+        }
+      },
+      "temporalAnchor": "2022-01-05",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-005",
+      "clusterId": "CLUSTER_LUNGLEI",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-MZ-LUNGLEI-20200125",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Mizoram",
+        "district": "Lunglei",
+        "coordinates": {
+          "lat": 22.889,
+          "lon": 92.738
+        }
+      },
+      "temporalAnchor": "2020-01-25",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-006",
+      "clusterId": "CLUSTER_KOHIMA",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-NL-KOHIMA-20210218",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Nagaland",
+        "district": "Kohima",
+        "coordinates": {
+          "lat": 25.675,
+          "lon": 94.108
+        }
+      },
+      "temporalAnchor": "2021-02-18",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-007",
+      "clusterId": "CLUSTER_HAFLONG",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-AS-HAFLONG-20220110",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Assam",
+        "district": "Dima Hasao",
+        "coordinates": {
+          "lat": 25.176,
+          "lon": 93.023
+        }
+      },
+      "temporalAnchor": "2022-01-10",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-008",
+      "clusterId": "CLUSTER_DHARMANAGAR",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-TR-DHARMANAGAR-20220118",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Tripura",
+        "district": "North Tripura",
+        "coordinates": {
+          "lat": 24.215,
+          "lon": 92.158
+        }
+      },
+      "temporalAnchor": "2022-01-18",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-009",
+      "clusterId": "CLUSTER_DZONGU",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-SK-DZONGU-20231215",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Sikkim",
+        "district": "Mangan (North Sikkim)",
+        "coordinates": {
+          "lat": 27.685,
+          "lon": 88.652
+        }
+      },
+      "temporalAnchor": "2023-12-15",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-010",
+      "clusterId": "CLUSTER_DAPORIJO",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-AR-DAPO-20230108",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Arunachal Pradesh",
+        "district": "Upper Subansiri",
+        "coordinates": {
+          "lat": 27.812,
+          "lon": 94.135
+        }
+      },
+      "temporalAnchor": "2023-01-08",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-011",
+      "clusterId": "CLUSTER_SONAPUR",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-ML-SONAPUR-20230202",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Meghalaya",
+        "district": "West Jaintia Hills",
+        "coordinates": {
+          "lat": 25.441,
+          "lon": 92.205
+        }
+      },
+      "temporalAnchor": "2023-02-02",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    },
+    {
+      "sampleId": "NER-NEG-012",
+      "clusterId": "CLUSTER_AMBASSA",
+      "source": "OPEN_METEO_HISTORICAL_ARCHIVE",
+      "sourceRecordId": "CONTROL-TR-AMBASSA-20230130",
+      "provenanceClassification": "SOURCE_DERIVED",
+      "geographicAnchor": {
+        "state": "Tripura",
+        "district": "Dhalai",
+        "coordinates": {
+          "lat": 23.856,
+          "lon": 91.884
+        }
+      },
+      "temporalAnchor": "2023-01-30",
+      "rainfallLineage": {
+        "provider": "Open-Meteo ERA5-Land Reanalysis Archive",
+        "window": "Strictly 24h & 72h antecedent to event timestamp",
+        "method": "Bilinear spatial interpolation on 0.1\u00b0 grid"
+      },
+      "terrainLineage": {
+        "provider": "Copernicus DEM (GLO-90)",
+        "resolution": "90m",
+        "method": "Nearest grid cell sampling and slope gradient calculation"
+      },
+      "seismicLineage": {
+        "provider": "USGS Earthquake Hazards API",
+        "method": "Regional 300km radial peak ground motion index"
+      },
+      "label": 0
+    }
+  ]
+}

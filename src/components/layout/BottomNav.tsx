@@ -9,19 +9,28 @@ import {
   AlertCircle,
   Clock,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export function BottomNav() {
   const pathname = usePathname();
 
+  // Do not show bottom nav on authority dashboard
+  if (pathname?.startsWith("/authority")) {
+    return null;
+  }
+
+  const isMonitor = pathname === "/";
+  const isRoutes = pathname === "/routes" || pathname?.startsWith("/routes");
+  const isShelters = pathname === "/shelters" || pathname?.startsWith("/shelters");
+  const isReport = pathname === "/report" || pathname?.startsWith("/report");
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-[72px] bg-white border-t border-slate-200 px-3 flex items-center justify-around z-50 max-w-sm sm:max-w-md mx-auto shadow-sm">
+    <nav className="sticky bottom-0 left-0 right-0 h-[72px] bg-white border-t border-slate-200 px-3 flex items-center justify-around z-50 w-full shadow-sm shrink-0">
       {/* 1. Monitor */}
       <Link
         href="/"
         className="flex flex-col items-center justify-center flex-1 py-1 text-center group"
       >
-        {pathname === "/" ? (
+        {isMonitor ? (
           <div className="flex flex-col items-center justify-center px-4 py-1.5 rounded-2xl bg-[#6ee7b7] text-emerald-950 transition-all shadow-sm">
             <LayoutGrid className="w-4 h-4 stroke-[2.5]" />
             <span className="text-[11px] font-bold text-emerald-950 mt-0.5">Monitor</span>
@@ -39,7 +48,7 @@ export function BottomNav() {
         href="/routes"
         className="flex flex-col items-center justify-center flex-1 py-1 text-center group"
       >
-        {pathname === "/routes" ? (
+        {isRoutes ? (
           <div className="flex flex-col items-center justify-center px-4 py-1.5 rounded-2xl bg-[#6ee7b7] text-emerald-950 transition-all shadow-sm">
             <div className="w-4 h-4 flex items-center justify-center">
               <svg
@@ -85,7 +94,7 @@ export function BottomNav() {
         href="/shelters"
         className="flex flex-col items-center justify-center flex-1 py-1 text-center group"
       >
-        {pathname === "/shelters" ? (
+        {isShelters ? (
           <div className="flex flex-col items-center justify-center px-4 py-1.5 rounded-2xl bg-[#6ee7b7] text-emerald-950 transition-all shadow-sm">
             <div className="relative">
               <Shield className="w-4 h-4 stroke-[2.5]" />
@@ -109,7 +118,7 @@ export function BottomNav() {
         href="/report"
         className="flex flex-col items-center justify-center flex-1 py-1 text-center group"
       >
-        {pathname.startsWith("/report") ? (
+        {isReport ? (
           <div className="flex flex-col items-center justify-center px-4 py-1.5 rounded-2xl bg-[#6ee7b7] text-emerald-950 transition-all shadow-sm">
             <AlertCircle className="w-4 h-4 stroke-[2.5]" />
             <span className="text-[11px] font-bold text-emerald-950 mt-0.5">Report</span>

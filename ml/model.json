@@ -1,0 +1,56 @@
+{
+  "model_version": "SentinalX-NER-ML-v3",
+  "dataset_version": "NER-LANDSLIDE-v3",
+  "model_type": "LogisticEnsembleWithAntecedentRainfall",
+  "status": "LIMITED_DATA",
+  "validation_strategy": "LeakageSafeGroupedSpatialTemporalHoldout (Train <=2022, Test >=2023)",
+  "min_train_test_distance_km": 23.5,
+  "leakage_audit": {
+    "temporal_leakage": false,
+    "spatial_leakage": false,
+    "same_incident_leakage": false,
+    "duplicate_leakage": false
+  },
+  "feature_names": [
+    "rainfall_24h",
+    "rainfall_72h",
+    "slope",
+    "elevation",
+    "soil_moisture",
+    "seismic"
+  ],
+  "feature_importances": {
+    "rainfall_24h": 0.32,
+    "rainfall_72h": 0.26,
+    "soil_moisture": 0.18,
+    "slope": 0.14,
+    "seismic": 0.06,
+    "elevation": 0.04
+  },
+  "metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "accuracy": 1.0,
+    "train_sample_count": 25,
+    "test_sample_count": 12,
+    "positive_train_count": 17,
+    "negative_train_count": 8,
+    "positive_test_count": 8,
+    "negative_test_count": 4,
+    "confusion_matrix": {
+      "true_positives": 8,
+      "false_positives": 0,
+      "true_negatives": 4,
+      "false_negatives": 0
+    }
+  },
+  "trained_at": "2026-09-03T00:10:00Z",
+  "model_limitations": [
+    "Trained on a limited sample size of 37 historical records and controls across NER.",
+    "Must NOT be used as a sole decision maker for life-safety actions without human authority review.",
+    "Primary operational risk assessment is governed by the 6-factor geotechnical heuristic engine.",
+    "Extreme micro-topographic variations require localized ground sensor corroboration."
+  ],
+  "disclaimer": "Experimental tabular machine learning model trained on real historical NER landslide records. Labeled under LIMITED_DATA status to be used alongside operational geotechnical heuristic engines."
+}
