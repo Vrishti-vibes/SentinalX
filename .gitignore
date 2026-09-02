@@ -7,3 +7,5 @@ out/
 .env.*.local
 *.log
 "@ | Set-Content .gitignore
+__pycache__/
+*.pyc
