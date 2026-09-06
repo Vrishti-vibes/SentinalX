@@ -133,161 +133,187 @@ function EmergencyContent() {
           </div>
         )}
 
-        {/* ── 4. Primary Emergency Services (1-Tap Call) ── */}
-        <div className="space-y-2.5">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 block">
-            National Emergency Helplines
-          </span>
-
-          {/* 112 - ERSS */}
-          <a
-            href="tel:112"
-            className="rounded-2xl bg-gradient-to-r from-[#b91c1c] to-[#991b1b] p-4 text-white shadow-md flex items-center justify-between hover:opacity-95 transition-all active:scale-[0.99] block"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                <PhoneCall className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="text-2xl font-black font-mono tracking-tight leading-none">
-                  112
-                </div>
-                <div className="text-xs font-bold text-white/90 mt-1">
-                  National Emergency Response (ERSS)
-                </div>
-                <div className="text-[10px] text-white/75 font-medium">
-                  Police • Disaster Response • All Emergencies
-                </div>
-              </div>
-            </div>
-            <span className="px-3 py-1.5 rounded-xl bg-white text-[#991b1b] text-xs font-extrabold tracking-wider shrink-0">
-              CALL
+        {/* ── 4 & 5. Emergency Helplines & Safety Guidance (Responsive 2-Column Desktop Grid) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Left Column: Primary Emergency Services */}
+          <div className="lg:col-span-6 space-y-2.5">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 block">
+              National Emergency Helplines
             </span>
-          </a>
 
-          {/* 108 - Medical */}
-          <a
-            href="tel:108"
-            className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center justify-between hover:bg-slate-50 transition-all active:scale-[0.99] block"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 text-[#b91c1c] flex items-center justify-center shrink-0">
-                <Ambulance className="w-5 h-5 stroke-[2]" />
+            {/* 112 - ERSS */}
+            <a
+              href="tel:112"
+              className="rounded-2xl bg-gradient-to-r from-[#b91c1c] to-[#991b1b] p-4 text-white shadow-md flex items-center justify-between hover:opacity-95 transition-all active:scale-[0.99] block"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                  <PhoneCall className="w-6 h-6 stroke-[2.2]" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black font-mono tracking-tight leading-none">
+                    112
+                  </div>
+                  <div className="text-xs font-bold text-white/90 mt-1">
+                    National Emergency Response (ERSS)
+                  </div>
+                  <div className="text-[10px] text-white/75 font-medium">
+                    Police • Disaster Response • All Emergencies
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-lg font-black font-mono text-slate-900 leading-none">
-                  108
-                </div>
-                <div className="text-xs font-bold text-slate-800 mt-0.5">
-                  Emergency Medical &amp; Ambulance
-                </div>
-                <div className="text-[10px] text-slate-500 font-medium">
-                  Paramedic response &amp; trauma transport
-                </div>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-extrabold tracking-wider shrink-0">
-              CALL
-            </span>
-          </a>
+              <span className="px-3 py-1.5 rounded-xl bg-white text-[#991b1b] text-xs font-extrabold tracking-wider shrink-0">
+                CALL
+              </span>
+            </a>
 
-          {/* 101 - Fire & Mountain Rescue */}
-          <a
-            href="tel:101"
-            className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center justify-between hover:bg-slate-50 transition-all active:scale-[0.99] block"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                <Flame className="w-5 h-5 stroke-[2]" />
+            {/* 108 - Medical */}
+            <a
+              href="tel:108"
+              className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center justify-between hover:bg-slate-50 transition-all active:scale-[0.99] block"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-[#b91c1c] flex items-center justify-center shrink-0">
+                  <Ambulance className="w-5 h-5 stroke-[2]" />
+                </div>
+                <div>
+                  <div className="text-lg font-black font-mono text-slate-900 leading-none">
+                    108
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                    Emergency Medical &amp; Ambulance
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-medium">
+                    Paramedic response &amp; trauma transport
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-lg font-black font-mono text-slate-900 leading-none">
-                  101
-                </div>
-                <div className="text-xs font-bold text-slate-800 mt-0.5">
-                  Fire &amp; Mountain Rescue Services
-                </div>
-                <div className="text-[10px] text-slate-500 font-medium">
-                  Search &amp; rescue • Road clearing units
-                </div>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-extrabold tracking-wider shrink-0">
-              CALL
-            </span>
-          </a>
+              <span className="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-extrabold tracking-wider shrink-0">
+                CALL
+              </span>
+            </a>
 
-          {/* 1070 - SDMA Helpline */}
-          <a
-            href="tel:1070"
-            className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center justify-between hover:bg-slate-50 transition-all active:scale-[0.99] block"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
-                <LifeBuoy className="w-5 h-5 stroke-[2]" />
+            {/* 101 - Fire & Mountain Rescue */}
+            <a
+              href="tel:101"
+              className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center justify-between hover:bg-slate-50 transition-all active:scale-[0.99] block"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <Flame className="w-5 h-5 stroke-[2]" />
+                </div>
+                <div>
+                  <div className="text-lg font-black font-mono text-slate-900 leading-none">
+                    101
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                    Fire &amp; Mountain Rescue Services
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-medium">
+                    Search &amp; rescue • Road clearing units
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-lg font-black font-mono text-slate-900 leading-none">
-                  1070
-                </div>
-                <div className="text-xs font-bold text-slate-800 mt-0.5">
-                  State Disaster Management Control (SDMA)
-                </div>
-                <div className="text-[10px] text-slate-500 font-medium">
-                  District collectorate emergency desks
-                </div>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-extrabold tracking-wider shrink-0">
-              CALL
-            </span>
-          </a>
-        </div>
+              <span className="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-extrabold tracking-wider shrink-0">
+                CALL
+              </span>
+            </a>
 
-        {/* ── 5. Landslide Safety Guidance ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <ShieldAlert className="w-4 h-4 text-[#b91c1c]" />
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
-              Landslide Safety Instructions
-            </h2>
+            {/* 1070 - SDMA Helpline */}
+            <a
+              href="tel:1070"
+              className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center justify-between hover:bg-slate-50 transition-all active:scale-[0.99] block"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
+                  <LifeBuoy className="w-5 h-5 stroke-[2]" />
+                </div>
+                <div>
+                  <div className="text-lg font-black font-mono text-slate-900 leading-none">
+                    1070
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                    State Disaster Management Control (SDMA)
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-medium">
+                    District collectorate emergency desks
+                  </div>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-extrabold tracking-wider shrink-0">
+                CALL
+              </span>
+            </a>
           </div>
 
-          <div className="space-y-2 text-xs text-slate-700 font-medium leading-relaxed">
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                1
-              </span>
-              <span><strong>Move away from steep slopes</strong> and active runoff channels immediately.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                2
-              </span>
-              <span><strong>Avoid blocked mountain roads</strong> and cracking pavement near road shoulders.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                3
-              </span>
-              <span><strong>Evacuate toward designated shelters</strong> via verified safe corridors.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                4
-              </span>
-              <span><strong>Do not approach debris piles</strong> or unstable slopes after earth tremors.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                5
-              </span>
-              <span><strong>Dial 112 or 108</strong> if anyone is injured, trapped, or in immediate peril.</span>
-            </div>
-          </div>
+          {/* Right Column: Landslide Safety Guidance & Quick Navigation */}
+          <div className="lg:col-span-6 space-y-3.5 flex flex-col justify-between">
+            {/* ── 5. Landslide Safety Guidance ── */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-3 flex-1">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <ShieldAlert className="w-4 h-4 text-[#b91c1c]" />
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
+                  Landslide Safety Instructions
+                </h2>
+              </div>
 
-          <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 italic">
-            Local district emergency contacts can be configured by authorities.
+              <div className="space-y-2.5 text-xs text-slate-700 font-medium leading-relaxed">
+                <div className="flex items-start gap-2">
+                  <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <span>
+                    <strong className="text-slate-900">Evacuate Immediately:</strong> If you hear rumbling sounds, see falling debris or unusual water runoff on slopes.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>
+                    <strong className="text-slate-900">Stay Off Embankments:</strong> Avoid steep road cuts, bridge abutments, and riverbanks during intense rainfall.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <span>
+                    <strong className="text-slate-900">Follow Designated Corridors:</strong> Use SentinalX Safe Routes to navigate towards certified high-ground relief centers.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    4
+                  </span>
+                  <span>
+                    <strong className="text-slate-900">Report Blockages:</strong> Inform disaster response units via the 1-tap Report Hazard tool to update real-time road networks.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 6. Emergency Navigation Actions ── */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Link href="/routes" className="block">
+                <button
+                  type="button"
+                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                >
+                  <Navigation className="w-4 h-4" />
+                  <span>Safe Evacuation</span>
+                </button>
+              </Link>
+              <Link href="/shelters" className="block">
+                <button
+                  type="button"
+                  className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>Nearest Shelters</span>
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
 

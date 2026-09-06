@@ -36,6 +36,7 @@ import { REFRESH_INTERVALS } from "@/lib/config/refresh";
 import { OfflineStatus } from "@/components/OfflineStatus";
 import { DataFreshness } from "@/components/DataFreshness";
 import { PROTOTYPE_DISCLAIMER } from "@/lib/services/risk.service";
+import LeafletMapDynamic from "@/components/map/LeafletMapDynamic";
 
 export default function AuthorityDashboard() {
   const { isOnline } = useNetworkStatus();
@@ -307,7 +308,7 @@ export default function AuthorityDashboard() {
 
   return (
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
-      {/* ── 1. Top Header ── */}
+      {/* â”€â”€ 1. Top Header â”€â”€ */}
       <header className="h-14 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         {/* Left: Brand Logo + SentinalX */}
         <Link href="/" className="flex items-center gap-2 group">
@@ -348,7 +349,7 @@ export default function AuthorityDashboard() {
         </div>
       </header>
 
-      {/* ── 2. Scrollable Body ── */}
+      {/* â”€â”€ 2. Scrollable Body â”€â”€ */}
       <div className="p-4 sm:p-5 space-y-4">
         {/* Offline Banner if running offline */}
         {!isOnline && (
@@ -401,12 +402,12 @@ export default function AuthorityDashboard() {
               onClick={() => setActionMessage(null)}
               className="text-emerald-700 hover:text-emerald-900 text-xs"
             >
-              ✕
+              âœ•
             </button>
           </div>
         )}
 
-        {/* ── 3. Operational KPI Quad ── */}
+        {/* â”€â”€ 3. Operational KPI Quad â”€â”€ */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {/* KPI 1: Active Response Deployments */}
           <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-3 shadow-sm flex flex-col justify-between">
@@ -448,6 +449,43 @@ export default function AuthorityDashboard() {
               {pendingVerificationCount}
             </div>
             <div className="text-[10px] text-amber-700 font-semibold">Awaiting review</div>
+          </div>
+        </div>
+
+        {/* ── 3.5. Command GIS Interactive Spatial Map ── */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-extrabold uppercase tracking-wider text-slate-800">
+                NER Disaster Command GIS Map
+              </span>
+              <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-bold">
+                INCIDENTS &bull; SHELTERS &bull; RISK ZONES
+              </span>
+            </div>
+            <Link
+              href="/map"
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            >
+              <span>Full Screen GIS</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="relative h-72 sm:h-80 lg:h-[420px] w-full bg-[#edf2f7] overflow-hidden">
+            <LeafletMapDynamic
+              selectedLocation="tawang"
+              reports={reports}
+              sensors={sensors}
+              onSelectFeature={(feature) => {
+                if (feature.type === "report") {
+                  const match = reports.find((r) => r.reportId === feature.id || r.id === feature.id);
+                  if (match) handleSelectReport(match);
+                }
+              }}
+              riskResult={null}
+            />
           </div>
         </div>
 
@@ -506,7 +544,7 @@ export default function AuthorityDashboard() {
                             : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        ● {resp.status.replace("_", " ")}
+                        â— {resp.status.replace("_", " ")}
                       </span>
                       {resp.estimatedResponseMinutes && (
                         <span className="text-[10px] font-mono text-slate-500">
@@ -592,7 +630,7 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
-        {/* ── 5. Early Warning Alerts & Incident Feed ── */}
+        {/* â”€â”€ 5. Early Warning Alerts & Incident Feed â”€â”€ */}
         <div className="rounded-2xl border border-rose-200 bg-white shadow-sm overflow-hidden">
           <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/30">
             <div>
@@ -631,7 +669,7 @@ export default function AuthorityDashboard() {
                             : "bg-amber-100 text-amber-900"
                         }`}
                       >
-                        {alert.severity} • {alert.id}
+                        {alert.severity} â€¢ {alert.id}
                       </span>
                       <span
                         className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
@@ -689,7 +727,7 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
-        {/* ── 6. Citizen Incident Triage Queue & Console ── */}
+        {/* â”€â”€ 6. Citizen Incident Triage Queue & Console â”€â”€ */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between">
             <div>
@@ -733,16 +771,16 @@ export default function AuthorityDashboard() {
                             : "bg-emerald-100 text-emerald-800"
                         }`}
                       >
-                        Sev {report.severity} • {report.severity >= 4 ? "High Risk" : report.severity === 3 ? "Moderate" : "Low"}
+                        Sev {report.severity} â€¢ {report.severity >= 4 ? "High Risk" : report.severity === 3 ? "Moderate" : "Low"}
                       </span>
 
                       {report.verificationStatus === "VERIFIED" ? (
                         <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                          ✓ Verified
+                          âœ“ Verified
                         </span>
                       ) : (
                         <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">
-                          ● Pending
+                          â— Pending
                         </span>
                       )}
                     </div>
@@ -769,7 +807,7 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
-        {/* ── 7. Selected Incident Detail & Triage Action Console ── */}
+        {/* â”€â”€ 7. Selected Incident Detail & Triage Action Console â”€â”€ */}
         {selectedReport && (
           <div className="rounded-2xl border-2 border-rose-200 bg-white p-4 sm:p-5 shadow-md space-y-4 animate-fadeIn">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
@@ -783,14 +821,14 @@ export default function AuthorityDashboard() {
                   </span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900 mt-0.5">
-                  {selectedReport.hazardType} • {selectedReport.locationName}
+                  {selectedReport.hazardType} â€¢ {selectedReport.locationName}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedReport(null)}
                 className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -881,7 +919,7 @@ export default function AuthorityDashboard() {
           </div>
         )}
 
-        {/* ── 8. Notification Outbox (Honest Prototype) ── */}
+        {/* â”€â”€ 8. Notification Outbox (Honest Prototype) â”€â”€ */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -924,7 +962,7 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
-        {/* ── 9. Geotechnical Sensor Network Telemetry Grid ── */}
+        {/* â”€â”€ 9. Geotechnical Sensor Network Telemetry Grid â”€â”€ */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -957,7 +995,7 @@ export default function AuthorityDashboard() {
                 <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono pt-1 border-t border-slate-200/60">
                   <span>Pore: {sensor.porePressure.toFixed(1)} kPa</span>
                   <span>Moist: {sensor.soilMoisture.toFixed(0)}%</span>
-                  <span>Tilt: {sensor.tiltAngle.toFixed(1)}°</span>
+                  <span>Tilt: {sensor.tiltAngle.toFixed(1)}Â°</span>
                 </div>
               </div>
             ))}
@@ -965,7 +1003,7 @@ export default function AuthorityDashboard() {
 
           <div className="text-center pt-1">
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-              DEMO SENSORS • PROTOTYPE GEOTECHNICAL GRID
+              DEMO SENSORS â€¢ PROTOTYPE GEOTECHNICAL GRID
             </span>
           </div>
         </div>
@@ -973,7 +1011,7 @@ export default function AuthorityDashboard() {
         {/* Disclaimer */}
         <div className="pt-2 text-center">
           <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-            {PROTOTYPE_DISCLAIMER}
+            "SENTINALX DISASTER MANAGEMENT CONSOLE • GOVT OF INDIA / MDONER (SIH26001)"
           </p>
         </div>
       </div>

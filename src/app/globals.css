@@ -7,9 +7,15 @@
   --foreground: #0f172a;
 }
 
-body {
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  max-width: 100%;
   color: var(--foreground);
-  background: #2c333d;
+  background: #f8fafc;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
 }
@@ -31,4 +37,109 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Container Queries Support */
+.app-container {
+  container-type: inline-size;
+  container-name: app;
+}
+
+/* ==========================================================================
+   DEVICE-MODE RESPONSIVE OVERRIDES
+   When previewing mobile or tablet within a desktop browser viewport,
+   force layout reflow to mimic real mobile/tablet viewports.
+   ========================================================================== */
+
+/* ── 1. MOBILE MODE (Approx 390px - 420px) ── */
+[data-device-mode="mobile"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Multi-column grid collapses to strict single column */
+[data-device-mode="mobile"] .grid-cols-12,
+[data-device-mode="mobile"] .lg\:grid-cols-12,
+[data-device-mode="mobile"] .md\:grid-cols-3,
+[data-device-mode="mobile"] .grid-cols-3,
+[data-device-mode="mobile"] .lg\:grid-cols-6,
+[data-device-mode="mobile"] .sm\:grid-cols-3,
+[data-device-mode="mobile"] .sm\:grid-cols-2 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+/* Column spans collapse to full width */
+[data-device-mode="mobile"] .lg\:col-span-12,
+[data-device-mode="mobile"] .lg\:col-span-8,
+[data-device-mode="mobile"] .lg\:col-span-7,
+[data-device-mode="mobile"] .lg\:col-span-6,
+[data-device-mode="mobile"] .lg\:col-span-5,
+[data-device-mode="mobile"] .lg\:col-span-4,
+[data-device-mode="mobile"] .col-span-2,
+[data-device-mode="mobile"] .col-span-3,
+[data-device-mode="mobile"] .col-span-4,
+[data-device-mode="mobile"] .col-span-5,
+[data-device-mode="mobile"] .col-span-7,
+[data-device-mode="mobile"] .col-span-8 {
+  grid-column: span 1 / span 1 !important;
+}
+
+/* Force mobile-only view to display and desktop-only to hide */
+[data-device-mode="mobile"] .lg\:hidden {
+  display: flex !important;
+}
+
+[data-device-mode="mobile"] .hidden.lg\:grid,
+[data-device-mode="mobile"] .hidden.lg\:flex {
+  display: none !important;
+}
+
+/* Flex rows collapse to columns */
+[data-device-mode="mobile"] .sm\:flex-row,
+[data-device-mode="mobile"] .lg\:flex-row {
+  flex-direction: column !important;
+}
+
+/* Tables scroll within their own container without page-level horizontal overflow */
+[data-device-mode="mobile"] .overflow-x-auto {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Text and images reflow inside phone viewport */
+[data-device-mode="mobile"] h1,
+[data-device-mode="mobile"] h2,
+[data-device-mode="mobile"] h3,
+[data-device-mode="mobile"] p,
+[data-device-mode="mobile"] span {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* ── 2. TABLET MODE (Approx 768px) ── */
+[data-device-mode="tablet"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+[data-device-mode="tablet"] .lg\:grid-cols-12 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+[data-device-mode="tablet"] .lg\:col-span-8,
+[data-device-mode="tablet"] .lg\:col-span-7,
+[data-device-mode="tablet"] .lg\:col-span-6,
+[data-device-mode="tablet"] .lg\:col-span-5,
+[data-device-mode="tablet"] .lg\:col-span-4 {
+  grid-column: span 1 / span 1 !important;
+}
+
+[data-device-mode="tablet"] .lg\:hidden {
+  display: flex !important;
+}
+
+[data-device-mode="tablet"] .hidden.lg\:grid,
+[data-device-mode="tablet"] .hidden.lg\:flex {
+  display: none !important;
 }

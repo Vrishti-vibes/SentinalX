@@ -123,7 +123,7 @@ export default function FieldReportScreen() {
       </header>
 
       {/* Main Content Area */}
-      <div className="p-4 sm:p-5 space-y-4">
+      <div className="p-4 sm:p-5 space-y-4 max-w-2xl mx-auto w-full">
         {/* ========================================================= */}
         {/* STATE A: REPORT SUBMITTED CONFIRMATION */}
         {/* ========================================================= */}

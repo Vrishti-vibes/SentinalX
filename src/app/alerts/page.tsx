@@ -309,7 +309,7 @@ export default function AlertsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
             {filteredAlerts.map((alert) => {
               const linkedResponse = getResponseForAlert(alert.id);
 

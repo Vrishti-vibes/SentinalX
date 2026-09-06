@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   MapPin,
@@ -8,55 +8,104 @@ import {
   Home,
   Tent,
   Landmark,
-  CheckCircle,
+  RotateCw,
+  Navigation,
+  CheckCircle2,
+  Shield,
 } from "lucide-react";
+import { ShelterRecord } from "@/types/shelter";
+import LeafletShelterMapDynamic from "@/components/map/LeafletShelterMapDynamic";
+import { useDeviceMode } from "@/components/layout/DeviceModeContext";
 
-interface ShelterItem {
-  id: string;
-  name: string;
-  distance: string;
-  capacityPercent: number;
-  status: "OPEN" | "FULL" | "STANDBY";
-  iconType: "community" | "camp" | "district";
-  address: string;
-  supplies: string;
-}
-
-const SHELTERS_DATA: ShelterItem[] = [
+// Exact SIH demo shelter data for Tawang Sector
+const DEFAULT_TAWANG_SHELTERS: ShelterRecord[] = [
   {
-    id: "shelter-1",
-    name: "TAWANG COMMUNITY CENTER",
-    distance: "1.2 km away",
+    id: "sh-1",
+    name: "Tawang Community Center",
+    sector: "tawang",
+    latitude: 27.592,
+    longitude: 91.875,
+    distance: "1.2 km",
+    distanceKm: 1.2,
     capacityPercent: 85,
+    totalCapacity: 250,
+    occupiedCapacity: 38,
     status: "OPEN",
     iconType: "community",
-    address: "Monastery Ridge Rd, Tawang",
-    supplies: "Emergency First Aid, Food Rations, Generator Power",
+    address: "Upper Tawang Road, Near Monpa Cultural Complex",
+    contactNumber: "+91 3794 222 201",
+    supplies: "Full medical aid, drinking water, generators, blankets (Cap: 250)",
+    isDemo: true,
   },
   {
-    id: "shelter-2",
-    name: "GOVERNMENT RELIEF CAMP",
-    distance: "2.4 km away",
+    id: "sh-2",
+    name: "Government Relief Camp",
+    sector: "tawang",
+    latitude: 27.579,
+    longitude: 91.848,
+    distance: "2.4 km",
+    distanceKm: 2.4,
     capacityPercent: 62,
+    totalCapacity: 400,
+    occupiedCapacity: 152,
     status: "OPEN",
     iconType: "camp",
-    address: "Old Market Complex, Tawang",
-    supplies: "Sleeping Mats, Clean Water, Medical Support",
+    address: "Helipad Grounds, Lumla Road Junction",
+    contactNumber: "+91 3794 222 202",
+    supplies: "Emergency rations, first responder post, field beds (Cap: 400)",
+    isDemo: true,
   },
   {
-    id: "shelter-3",
-    name: "DISTRICT RELIEF CENTER",
-    distance: "3.1 km away",
+    id: "sh-3",
+    name: "District Relief Center",
+    sector: "tawang",
+    latitude: 27.595,
+    longitude: 91.840,
+    distance: "3.1 km",
+    distanceKm: 3.1,
     capacityPercent: 40,
+    totalCapacity: 600,
+    occupiedCapacity: 360,
     status: "OPEN",
     iconType: "district",
-    address: "DC Office Sector, Tawang",
-    supplies: "Satellite Communications, Warm Blankets",
+    address: "DC Office Complex, High Ground Sector",
+    contactNumber: "+91 3794 222 203",
+    supplies: "Disaster management command post, communication hub (Cap: 600)",
+    isDemo: true,
   },
 ];
 
 export default function SheltersScreen() {
+  const { isMobile } = useDeviceMode();
+  const [shelters, setShelters] = useState<ShelterRecord[]>(DEFAULT_TAWANG_SHELTERS);
+  const [selectedLocation, setSelectedLocation] = useState<string>("tawang");
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchShelters = async (sector: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/shelters?sector=${sector}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setShelters(json.data);
+        } else {
+          setShelters(DEFAULT_TAWANG_SHELTERS);
+        }
+      } else {
+        setShelters(DEFAULT_TAWANG_SHELTERS);
+      }
+    } catch {
+      setShelters(DEFAULT_TAWANG_SHELTERS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchShelters(selectedLocation);
+  }, [selectedLocation]);
 
   return (
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
@@ -84,193 +133,171 @@ export default function SheltersScreen() {
           </span>
         </Link>
 
-        {/* Right: LIVE status text */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-[#991b1b] tracking-wider">
-            LIVE
+        {/* Right: Refresh & Sector Indicator */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold border border-slate-200">
+            SHELTER DIRECTORY
           </span>
+          <button
+            type="button"
+            onClick={() => fetchShelters(selectedLocation)}
+            disabled={isLoading}
+            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors disabled:opacity-50"
+            title="Refresh Shelters"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="p-4 sm:p-5 space-y-4">
-        {/* 2. Page Subheader */}
-        <div>
-          <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-            <span>NORTH EASTERN REGION • ONLINE</span>
+      <div className="p-4 sm:p-6 space-y-4 max-w-7xl w-full mx-auto">
+        {/* 2. Page Subheader + Location Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>NORTH EASTERN REGION • EMERGENCY RELIEF NETWORK</span>
+            </div>
+            <h1 className="text-[22px] sm:text-2xl font-black text-[#0f172a] tracking-tight leading-tight">
+              NEAREST SHELTERS
+            </h1>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-600 font-semibold">
+              <MapPin className="w-3.5 h-3.5 text-slate-500" />
+              <span>Tawang Sector, Arunachal Pradesh (Primary SIH Demo)</span>
+            </div>
           </div>
-          <h1 className="text-[22px] font-extrabold text-[#0f172a] tracking-tight leading-tight">
-            NEAREST SHELTERS
-          </h1>
-          <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-600 font-semibold">
-            <MapPin className="w-3.5 h-3.5 text-slate-500" />
-            <span>Tawang Sector</span>
+
+          <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-200/70 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setSelectedLocation("tawang")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                selectedLocation === "tawang"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Tawang Sector
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedLocation("gangtok")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                selectedLocation === "gangtok"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Sikkim / NH-10
+            </button>
           </div>
         </div>
 
-        {/* 3. Shelter Map Card */}
-        <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-[#eef7ee] shadow-sm h-48 sm:h-52">
-          {/* Topographic Terrain Background Visual */}
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-85"
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse at center, rgba(220, 245, 220, 0.4) 0%, rgba(200, 235, 205, 0.9) 100%), linear-gradient(135deg, #e4f4e4 0%, #d5ebd5 100%)",
-            }}
-          />
-
-          {/* Contour Lines and River / Road Vectors */}
-          <svg
-            className="absolute inset-0 w-full h-full opacity-40"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Topo lines */}
-            <path d="M-20,40 Q60,10 140,50 T300,30 T460,40" fill="none" stroke="#608b60" strokeWidth="0.8" />
-            <path d="M-20,80 Q80,50 180,90 T340,70 T480,80" fill="none" stroke="#608b60" strokeWidth="0.8" />
-            <path d="M-20,120 Q100,90 220,130 T380,110" fill="none" stroke="#608b60" strokeWidth="0.8" />
-            <path d="M-20,160 Q120,130 260,170 T420,150" fill="none" stroke="#608b60" strokeWidth="0.8" />
-
-            {/* River / Blue Path */}
-            <path
-              d="M 180,0 Q 170,80 150,120 T 130,200"
-              fill="none"
-              stroke="#60a5fa"
-              strokeWidth="2.5"
-              className="opacity-70"
-            />
-
-            {/* Main Road Line */}
-            <path
-              d="M 80,180 Q 140,140 180,90 T 260,30"
-              fill="none"
-              stroke="#94a3b8"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-            />
-          </svg>
-
-          {/* Map Geographic Labels matching Stitch */}
-          <div className="absolute top-4 right-16 text-[9px] font-bold text-slate-700 font-sans">
-            Zemithang HQ
-          </div>
-          <div className="absolute top-10 right-28 text-[8px] font-semibold text-slate-600 text-center leading-tight">
-            Zemithang<br />Lumpo
-          </div>
-          <div className="absolute top-14 left-16 text-[8px] font-semibold text-slate-600 flex items-center gap-1">
-            <span>Gorsam Chorten</span>
-            <span className="w-2.5 h-2.5 rounded-full border border-slate-500 inline-block text-[6px] text-center">☸</span>
-          </div>
-          <div className="absolute bottom-3 right-16 text-[8px] font-semibold text-slate-600">
-            Khelengteng
-          </div>
-
-          {/* User Location Pin on Map */}
-          <div className="absolute top-24 left-36 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full bg-blue-500/25 animate-ping absolute" />
-            <div className="w-5 h-5 rounded-full bg-blue-600 border-2 border-white shadow flex items-center justify-center text-white">
-              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+        {/* 3. Real Interactive GIS Shelter Map (CARTO Voyager Basemap) */}
+        <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm flex flex-col">
+          <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 font-bold text-slate-800">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Interactive Relief Geography • Tawang Sector</span>
             </div>
+            <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
+              CARTO Voyager Basemap • Leaflet GIS
+            </span>
           </div>
 
-          {/* Shelter Pin 1 (Zemithang / Tawang Community Center) */}
-          <div className="absolute top-16 right-20 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="w-5 h-5 rounded-full bg-[#16a34a] border-2 border-white shadow flex items-center justify-center text-white text-[8px]">
-              ⛺
-            </div>
-          </div>
-
-          {/* Floating Legend Overlay Box in bottom-left */}
-          <div className="absolute bottom-2.5 left-2.5 z-10 space-y-1">
-            <div className="px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-sm border border-slate-200/80 shadow-sm flex items-center gap-1.5 text-[9px] font-bold text-slate-800">
-              <span className="w-2 h-2 rounded-full bg-[#2563eb]" />
-              <span>YOUR LOCATION</span>
-            </div>
-            <div className="px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-sm border border-slate-200/80 shadow-sm flex items-center gap-1.5 text-[9px] font-bold text-[#065f46]">
-              <Home className="w-3 h-3 text-[#065f46]" />
-              <span>SHELTER LOCATIONS</span>
-            </div>
+          {/* Map Canvas: 300-340px on mobile, 420-480px on desktop */}
+          <div className="relative h-[320px] sm:h-[400px] lg:h-[460px] w-full bg-[#edf2f7] overflow-hidden">
+            <LeafletShelterMapDynamic onSelectShelter={setSelectedShelterId} />
           </div>
         </div>
 
-        {/* 4. Shelter Cards List */}
-        <div className="space-y-3">
-          {SHELTERS_DATA.map((shelter) => {
+        {/* 4. Shelter Cards (3 Cards below map in Desktop Grid / Single Column Mobile) */}
+        <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-3"} gap-4 pt-1`}>
+          {shelters.map((shelter) => {
             const isSelected = selectedShelterId === shelter.id;
 
             return (
               <div
                 key={shelter.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3 transition-all"
+                className={`rounded-2xl border bg-white p-4 sm:p-5 shadow-sm space-y-3.5 transition-all flex flex-col justify-between ${
+                  isSelected
+                    ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-md"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
               >
-                {/* Top Row: Icon + Name/Distance + OPEN Badge */}
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex items-start gap-3">
-                    {/* Mint/Aquamarine Square Icon Container */}
-                    <div className="w-10 h-10 rounded-xl bg-[#a7f3d0]/70 border border-[#6ee7b7]/60 flex items-center justify-center text-[#065f46] shrink-0 mt-0.5">
-                      {shelter.iconType === "community" && (
-                        <Home className="w-5 h-5 stroke-[2.2]" />
-                      )}
-                      {shelter.iconType === "camp" && (
-                        <Tent className="w-5 h-5 stroke-[2.2]" />
-                      )}
-                      {shelter.iconType === "district" && (
-                        <Landmark className="w-5 h-5 stroke-[2.2]" />
-                      )}
+                <div className="space-y-3">
+                  {/* Top Row: Icon + Name + Distance + OPEN Badge */}
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 shrink-0 mt-0.5">
+                        {shelter.iconType === "community" && <Home className="w-5 h-5 stroke-[2.2]" />}
+                        {shelter.iconType === "camp" && <Tent className="w-5 h-5 stroke-[2.2]" />}
+                        {shelter.iconType === "district" && <Landmark className="w-5 h-5 stroke-[2.2]" />}
+                      </div>
+
+                      <div>
+                        <h3 className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight leading-snug">
+                          {shelter.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-bold mt-0.5 font-mono">
+                          {shelter.distance}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <h3 className="font-extrabold text-sm text-slate-900 tracking-tight leading-snug">
-                        {shelter.name}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
-                        {shelter.distance}
-                      </p>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs font-black shrink-0">
+                      {shelter.status}
+                    </span>
+                  </div>
+
+                  {/* Capacity Bar & Percentage */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <span>Available Capacity:</span>
+                      <span className="font-mono text-emerald-700 font-black">
+                        {shelter.capacityPercent}% OPEN
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                        style={{ width: `${shelter.capacityPercent}%` }}
+                      />
                     </div>
                   </div>
 
-                  {/* OPEN Status Badge */}
-                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-300 text-[11px] font-bold shrink-0">
-                    {shelter.status}
-                  </span>
+                  {/* Details preview */}
+                  <div className="text-xs text-slate-600 space-y-1 pt-1 border-t border-slate-100">
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      <strong>Address:</strong> {shelter.address}
+                    </p>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      <strong>Supplies:</strong> {shelter.supplies}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Capacity Progress Bar with Percentage */}
-                <div className="flex items-center gap-2.5 pt-0.5">
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#065f46] rounded-full transition-all duration-300"
-                      style={{ width: `${shelter.capacityPercent}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-slate-500 font-medium shrink-0 w-8 text-right">
-                    {shelter.capacityPercent}%
-                  </span>
+                {/* Buttons: VIEW SHELTER & GET DIRECTIONS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedShelterId(isSelected ? null : shelter.id)}
+                    className="w-full h-10 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs tracking-wider flex items-center justify-center transition-all"
+                  >
+                    <span>{isSelected ? "HIDE DETAILS" : "VIEW SHELTER"}</span>
+                  </button>
+
+                  <Link href="/routes" className="block w-full">
+                    <button
+                      type="button"
+                      className="w-full h-10 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>DIRECTIONS</span>
+                    </button>
+                  </Link>
                 </div>
-
-                {/* Expandable Details if selected */}
-                {isSelected && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1.5 animate-fadeIn">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800">Address:</span>
-                      <span>{shelter.address}</span>
-                    </div>
-                    <div className="pt-1 border-t border-slate-200">
-                      <span className="font-bold text-slate-800">Supplies:</span> {shelter.supplies}
-                    </div>
-                  </div>
-                )}
-
-                {/* VIEW SHELTER Action Button */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedShelterId(isSelected ? null : shelter.id)
-                  }
-                  className="w-full h-10 rounded-xl bg-white hover:bg-slate-50 border-2 border-slate-900 text-slate-900 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center transition-all active:scale-[0.99]"
-                >
-                  <span>{isSelected ? "HIDE DETAILS" : "VIEW SHELTER"}</span>
-                </button>
               </div>
             );
           })}
@@ -278,38 +305,21 @@ export default function SheltersScreen() {
 
         {/* 5. Guidance Notice Box */}
         <div className="rounded-xl bg-[#dbeafe]/70 border border-[#bfdbfe]/80 p-3.5 flex items-center gap-2.5 text-xs text-slate-700 shadow-sm">
-          <div className="w-4 h-4 flex items-center justify-center text-slate-700 shrink-0">
-            <Info className="w-4 h-4 stroke-[2]" />
-          </div>
-          <p className="flex-1 font-medium text-slate-700 leading-snug">
-            Choose the nearest open shelter and follow the recommended safe route.
+          <Info className="w-4 h-4 text-blue-700 shrink-0" />
+          <p className="flex-1 font-medium text-slate-800 leading-snug">
+            All designated relief centers are equipped with continuous backup power, satellite communications, and emergency first-aid supplies.
           </p>
         </div>
 
-        {/* 6. Primary Action Button: GET DIRECTIONS */}
+        {/* 6. Primary Action: GET DIRECTIONS */}
         <div className="pt-1">
           <Link href="/routes" className="block w-full">
             <button
               type="button"
-              className="w-full h-12 rounded-xl bg-[#ea3838] hover:bg-[#d62b2b] text-white font-extrabold text-sm tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]"
+              className="w-full h-12 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-extrabold text-sm tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]"
             >
-              {/* Route turn icon */}
-              <div className="w-4 h-4 flex items-center justify-center">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-white"
-                >
-                  <path d="M18 8L22 12L18 16" />
-                  <path d="M2 12H22" />
-                  <path d="M6 16L2 12L6 8" />
-                </svg>
-              </div>
-              <span>GET DIRECTIONS</span>
+              <Navigation className="w-4 h-4" />
+              <span>NAVIGATE TO NEAREST OPEN SHELTER (SAFE ROUTE)</span>
             </button>
           </Link>
         </div>
@@ -317,7 +327,7 @@ export default function SheltersScreen() {
         {/* 7. Demo / Prototype Footer Note */}
         <div className="pt-2 pb-1 text-center">
           <span className="text-[10px] font-mono tracking-widest text-slate-400 font-semibold uppercase">
-            DEMO / PROTOTYPE DATA
+            SENTINALX DISASTER RELIEF DIRECTORY • SIH26001 DEMO
           </span>
         </div>
       </div>

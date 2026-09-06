@@ -29,8 +29,11 @@ import { DataFreshness } from "@/components/DataFreshness";
 import { DataSources } from "@/components/DataSources";
 import { SentinalXNerMlModel } from "@/lib/ml/model";
 import { PROTOTYPE_DISCLAIMER } from "@/lib/services/risk.service";
+import LeafletMapDynamic from "@/components/map/LeafletMapDynamic";
+import { useDeviceMode } from "@/components/layout/DeviceModeContext";
 
 export default function MonitorHomeScreen() {
+  const { isMobile } = useDeviceMode();
   const {
     selectedLocation,
     setSelectedLocation,
@@ -55,7 +58,7 @@ export default function MonitorHomeScreen() {
 
   return (
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
-      {/* ── 1. SentinalX Header Bar ── */}
+      {/* â”€â”€ 1. SentinalX Header Bar â”€â”€ */}
       <header className="h-14 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
         {/* Left: Red Diamond Logo + SentinalX */}
         <Link href="/" className="flex items-center gap-2 group">
@@ -96,7 +99,7 @@ export default function MonitorHomeScreen() {
       </header>
 
       {/* ── 2. Scrollable Body ── */}
-      <div className="p-4 sm:p-5 space-y-4">
+      <div className="p-4 sm:p-5 flex flex-col space-y-4">
         {/* Region Subheader & Location Selector */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
@@ -145,210 +148,217 @@ export default function MonitorHomeScreen() {
           </div>
         </div>
 
-        {/* ── 3. Dynamic Overall Landslide Risk Threat Card ── */}
-        {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center space-y-2">
-            <AlertTriangle className="w-6 h-6 text-rose-600 mx-auto" />
-            <div className="text-xs font-bold text-rose-900">
-              Risk intelligence temporarily unavailable
-            </div>
-            <p className="text-[11px] text-rose-700 max-w-xs mx-auto">{error}</p>
-            <button
-              onClick={refresh}
-              className="px-3 py-1 bg-rose-600 text-white rounded-lg text-xs font-bold"
-            >
-              Retry Connection
-            </button>
-          </div>
-        ) : (
-          <div
-            className={`rounded-2xl border bg-gradient-to-br from-white p-4 sm:p-5 shadow-sm space-y-3 transition-all ${
-              riskLevel === "CRITICAL"
-                ? "border-rose-400 via-rose-50/40 to-rose-100/50"
-                : riskLevel === "HIGH"
-                ? "border-rose-300 via-rose-50/30 to-rose-100/40"
-                : riskLevel === "MODERATE"
-                ? "border-amber-200 via-amber-50/30 to-amber-100/30"
-                : "border-emerald-200 via-emerald-50/30 to-emerald-100/30"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#991b1b] flex items-center gap-1.5">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    riskLevel === "CRITICAL" || riskLevel === "HIGH"
-                      ? "bg-rose-600 animate-ping"
-                      : "bg-amber-500"
-                  }`}
-                />
-                <span>CURRENT LANDSLIDE THREAT</span>
-              </span>
-              <DataFreshness
-                timestamp={lastCalculatedAt}
-                isRefreshing={isRefreshing}
-                isCached={isCached}
-              />
-            </div>
-
-            <div>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-2">
-                <span>{riskLevel} RISK</span>
-                <span className="text-sm sm:text-base font-bold font-mono text-[#991b1b]">
-                  ({riskScore.toFixed(1)} / 100)
-                </span>
+        {/* ── 3 & 4. Primary Threat Overview & Status Metrics ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 order-1">
+          {/* â”€â”€ 3. Dynamic Overall Landslide Risk Threat Card â”€â”€ */}
+          <div className="lg:col-span-7 flex flex-col">
+            {error ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center space-y-2 h-full flex flex-col justify-center">
+                <AlertTriangle className="w-6 h-6 text-rose-600 mx-auto" />
+                <div className="text-xs font-bold text-rose-900">
+                  Risk intelligence temporarily unavailable
+                </div>
+                <p className="text-[11px] text-rose-700 max-w-xs mx-auto">{error}</p>
+                <button
+                  onClick={refresh}
+                  className="px-3 py-1 bg-rose-600 text-white rounded-lg text-xs font-bold self-center"
+                >
+                  Retry Connection
+                </button>
               </div>
-              <p className="text-xs font-medium text-slate-600 mt-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#991b1b] shrink-0" />
-                <span>{locationName}</span>
-              </p>
-            </div>
-
-            {/* Dynamic Risk Gauge Bar */}
-            <div className="space-y-1 pt-1">
-              <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex gap-0.5">
-                <div
-                  className={`h-full w-1/4 transition-all ${
-                    riskLevel === "SAFE" ? "bg-emerald-500 ring-2 ring-emerald-600" : "bg-emerald-300/80"
-                  }`}
-                />
-                <div
-                  className={`h-full w-1/4 transition-all ${
-                    riskLevel === "MODERATE" ? "bg-amber-500 ring-2 ring-amber-600" : "bg-amber-300/80"
-                  }`}
-                />
-                <div
-                  className={`h-full w-1/4 transition-all ${
-                    riskLevel === "HIGH" ? "bg-orange-500 ring-2 ring-orange-600" : "bg-orange-300/80"
-                  }`}
-                />
-                <div
-                  className={`h-full w-1/4 transition-all ${
-                    riskLevel === "CRITICAL" ? "bg-rose-600 ring-2 ring-rose-700" : "bg-rose-300/80"
-                  }`}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] font-semibold text-slate-500 pt-0.5">
-                <span className={riskLevel === "SAFE" ? "font-bold text-emerald-700" : ""}>Safe</span>
-                <span className={riskLevel === "MODERATE" ? "font-bold text-amber-700" : ""}>Moderate</span>
-                <span className={riskLevel === "HIGH" ? "font-bold text-orange-700" : ""}>High</span>
-                <span className={riskLevel === "CRITICAL" ? "font-bold text-rose-700" : ""}>Critical</span>
-              </div>
-            </div>
-
-            {/* Primary Threat & Recommendation Box */}
-            {riskResult && (
-              <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-xs">
-                <div className="flex items-start gap-1.5 text-slate-800">
-                  <Shield className="w-3.5 h-3.5 text-[#991b1b] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-extrabold uppercase text-[10px] text-slate-500 block">
-                      PRIMARY THREAT
+            ) : (
+              <div
+                className={`rounded-2xl border bg-gradient-to-br from-white p-4 sm:p-5 shadow-sm space-y-3 transition-all h-full flex flex-col justify-between ${
+                  riskLevel === "CRITICAL"
+                    ? "border-rose-400 via-rose-50/40 to-rose-100/50"
+                    : riskLevel === "HIGH"
+                    ? "border-rose-300 via-rose-50/30 to-rose-100/40"
+                    : riskLevel === "MODERATE"
+                    ? "border-amber-200 via-amber-50/30 to-amber-100/30"
+                    : "border-emerald-200 via-emerald-50/30 to-emerald-100/30"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#991b1b] flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          riskLevel === "CRITICAL" || riskLevel === "HIGH"
+                            ? "bg-rose-600 animate-ping"
+                            : "bg-amber-500"
+                        }`}
+                      />
+                      <span>CURRENT LANDSLIDE THREAT</span>
                     </span>
-                    <span className="font-bold">{riskResult.primaryThreat}</span>
+                    <DataFreshness
+                      timestamp={lastCalculatedAt}
+                      isRefreshing={isRefreshing}
+                      isCached={isCached}
+                    />
+                  </div>
+
+                  <div className="mt-2">
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-2">
+                      <span>{riskLevel} RISK</span>
+                      <span className="text-sm sm:text-base font-bold font-mono text-[#991b1b]">
+                        ({riskScore.toFixed(1)} / 100)
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-slate-600 mt-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#991b1b] shrink-0" />
+                      <span>{locationName}</span>
+                    </p>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/80 border border-slate-200/70 text-[11px] text-slate-700 leading-relaxed">
-                  <span className="font-bold text-slate-900">Recommendation: </span>
-                  {riskResult.recommendation}
+                {/* Dynamic Risk Gauge Bar */}
+                <div className="space-y-1 pt-1">
+                  <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex gap-0.5">
+                    <div
+                      className={`h-full w-1/4 transition-all ${
+                        riskLevel === "SAFE" ? "bg-emerald-500 ring-2 ring-emerald-600" : "bg-emerald-300/80"
+                      }`}
+                    />
+                    <div
+                      className={`h-full w-1/4 transition-all ${
+                        riskLevel === "MODERATE" ? "bg-amber-500 ring-2 ring-amber-600" : "bg-amber-300/80"
+                      }`}
+                    />
+                    <div
+                      className={`h-full w-1/4 transition-all ${
+                        riskLevel === "HIGH" ? "bg-orange-500 ring-2 ring-orange-600" : "bg-orange-300/80"
+                      }`}
+                    />
+                    <div
+                      className={`h-full w-1/4 transition-all ${
+                        riskLevel === "CRITICAL" ? "bg-rose-600 ring-2 ring-rose-700" : "bg-rose-300/80"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-semibold text-slate-500 pt-0.5">
+                    <span className={riskLevel === "SAFE" ? "font-bold text-emerald-700" : ""}>Safe</span>
+                    <span className={riskLevel === "MODERATE" ? "font-bold text-amber-700" : ""}>Moderate</span>
+                    <span className={riskLevel === "HIGH" ? "font-bold text-orange-700" : ""}>High</span>
+                    <span className={riskLevel === "CRITICAL" ? "font-bold text-rose-700" : ""}>Critical</span>
+                  </div>
                 </div>
+
+                {/* Primary Threat & Recommendation Box */}
+                {riskResult && (
+                  <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-xs">
+                    <div className="flex items-start gap-1.5 text-slate-800">
+                      <Shield className="w-3.5 h-3.5 text-[#991b1b] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-extrabold uppercase text-[10px] text-slate-500 block">
+                          PRIMARY THREAT
+                        </span>
+                        <span className="font-bold">{riskResult.primaryThreat}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-white/80 border border-slate-200/70 text-[11px] text-slate-700 leading-relaxed">
+                      <span className="font-bold text-slate-900">Recommendation: </span>
+                      {riskResult.recommendation}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
 
-        {/* ── 4. Status Metrics Triad ── */}
-        <div className="space-y-1.5">
-          <div className="grid grid-cols-3 gap-2.5">
-            {/* Metric 1: Rainfall */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Rainfall</span>
-                <CloudRain className="w-4 h-4 text-blue-500" />
-              </div>
-              <div>
-                <div className="text-base sm:text-lg font-bold font-mono text-slate-900 leading-none">
-                  {weatherData ? weatherData.recent.rainfall24hMm.toFixed(1) : "4.3"}{" "}
-                  <span className="text-[10px] font-normal text-slate-500">mm</span>
+          {/* ── 4. Status Metrics Triad ── */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-2">
+            <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-3 lg:grid-cols-1"} gap-2.5 flex-1`}>
+              {/* Metric 1: Rainfall */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Rainfall (Open-Meteo)</span>
+                  <CloudRain className="w-4 h-4 text-blue-500" />
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">24h Total</div>
-              </div>
-              <div
-                className={`mt-2 pt-1 border-t border-slate-100 text-[10px] font-bold ${
-                  (weatherData?.recent.rainfall24hMm ?? 4.3) >= 50
-                    ? "text-rose-600"
+                <div className="flex lg:items-baseline lg:justify-between">
+                  <div className="text-base sm:text-lg font-bold font-mono text-slate-900 leading-none">
+                    {weatherData ? weatherData.recent.rainfall24hMm.toFixed(1) : "4.3"}{" "}
+                    <span className="text-[10px] font-normal text-slate-500">mm</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-1 lg:mt-0">24h Total</div>
+                </div>
+                <div
+                  className={`mt-2 pt-1 border-t border-slate-100 text-[10px] font-bold ${
+                    (weatherData?.recent.rainfall24hMm ?? 4.3) >= 50
+                      ? "text-rose-600"
+                      : (weatherData?.recent.rainfall24hMm ?? 4.3) >= 15
+                      ? "text-amber-600"
+                      : "text-emerald-600"
+                  }`}
+                >
+                  {(weatherData?.recent.rainfall24hMm ?? 4.3) >= 50
+                    ? "▲ Heavy Rain"
                     : (weatherData?.recent.rainfall24hMm ?? 4.3) >= 15
-                    ? "text-amber-600"
-                    : "text-emerald-600"
-                }`}
-              >
-                {(weatherData?.recent.rainfall24hMm ?? 4.3) >= 50
-                  ? "▲ Heavy Rain"
-                  : (weatherData?.recent.rainfall24hMm ?? 4.3) >= 15
-                  ? "▲ Moderate Rain"
-                  : "● Nominal Levels"}
-              </div>
-            </div>
-
-            {/* Metric 2: Soil Moisture */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Moisture</span>
-                <Droplets className="w-4 h-4 text-emerald-500" />
-              </div>
-              <div>
-                <div className="text-base sm:text-lg font-bold font-mono text-slate-900 leading-none">
-                  {weatherData?.soil?.moisturePercent != null ? weatherData.soil.moisturePercent.toFixed(0) : "84"}{" "}
-                  <span className="text-[10px] font-normal text-slate-500">%</span>
+                    ? "▲ Moderate Rain"
+                    : "● Nominal Levels"}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">Soil Saturation</div>
               </div>
-              <div className="mt-2 pt-1 border-t border-slate-100 text-[10px] font-bold text-amber-600">
-                {(weatherData?.soil.moisturePercent ?? 84) > 80 ? "▲ Elevated Saturation" : "● Nominal Index"}
-              </div>
-            </div>
 
-            {/* Metric 3: Geotechnical In-Situ State */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Pore Pressure</span>
-                <Mountain className="w-4 h-4 text-amber-500" />
-              </div>
-              <div>
-                <div className="text-base sm:text-lg font-bold font-mono text-slate-900 leading-none">
-                  {riskResult?.factors.porePressure.raw ? `${riskResult.factors.porePressure.raw}` : "42.1"}{" "}
-                  <span className="text-[10px] font-normal text-slate-500">kPa</span>
+              {/* Metric 2: Soil Moisture */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Soil Saturation</span>
+                  <Droplets className="w-4 h-4 text-emerald-500" />
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">Hydrostatic Load</div>
+                <div className="flex lg:items-baseline lg:justify-between">
+                  <div className="text-base sm:text-lg font-bold font-mono text-slate-900 leading-none">
+                    {weatherData?.soil?.moisturePercent != null ? weatherData.soil.moisturePercent.toFixed(0) : "84"}{" "}
+                    <span className="text-[10px] font-normal text-slate-500">%</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-1 lg:mt-0">Weather Model Layer</div>
+                </div>
+                <div className="mt-2 pt-1 border-t border-slate-100 text-[10px] font-bold text-amber-600">
+                  {(weatherData?.soil.moisturePercent ?? 84) > 80 ? "▲ Elevated Saturation" : "● Nominal Index"}
+                </div>
               </div>
-              <div className="mt-2 pt-1 border-t border-slate-100 text-[10px] font-bold text-amber-600">
-                Demo Telemetry
-              </div>
-            </div>
-          </div>
 
-          {/* Subtle Live Weather Data Source Tag */}
-          <div className="flex items-center justify-between px-1 text-[10px] text-slate-500 font-medium">
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  weatherData && !weatherData.isFallback
-                    ? "bg-emerald-500 animate-pulse"
-                    : "bg-amber-500"
-                }`}
-              />
-              <span className="font-semibold text-slate-600">
-                {weatherData && !weatherData.isFallback
-                  ? "LIVE WEATHER MODEL (Open-Meteo)"
-                  : "WEATHER MODEL FALLBACK"}
-              </span>
+              {/* Metric 3: Geotechnical In-Situ State */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Pore Pressure &amp; Tilt</span>
+                  <Mountain className="w-4 h-4 text-amber-500" />
+                </div>
+                <div className="flex lg:items-baseline lg:justify-between">
+                  <div className="text-base sm:text-lg font-bold font-mono text-slate-900 leading-none">
+                    {riskResult?.factors.porePressure.raw ? `${riskResult.factors.porePressure.raw}` : "42.1"}{" "}
+                    <span className="text-[10px] font-normal text-slate-500">kPa</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-1 lg:mt-0">Hydrostatic Load</div>
+                </div>
+                <div className="mt-2 pt-1 border-t border-slate-100 text-[10px] font-bold text-amber-600">
+                  Demo Telemetry
+                </div>
+              </div>
             </div>
-            <span className="text-slate-400 font-mono">{locationName}</span>
+
+            {/* Subtle Live Weather Data Source Tag */}
+            <div className="flex items-center justify-between px-1 text-[10px] text-slate-500 font-medium pt-0.5">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    weatherData && !weatherData.isFallback
+                      ? "bg-emerald-500 animate-pulse"
+                      : "bg-amber-500"
+                  }`}
+                />
+                <span className="font-semibold text-slate-600">
+                  {weatherData && !weatherData.isFallback
+                    ? "LIVE WEATHER MODEL (Open-Meteo)"
+                    : "WEATHER MODEL FALLBACK"}
+                </span>
+              </div>
+              <span className="text-slate-400 font-mono">{locationName}</span>
+            </div>
           </div>
         </div>
 
         {/* ── 5. Multi-Source Risk Intelligence Breakdown (Expandable Accordion) ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden ${isMobile ? "order-4" : "order-2"}`}>
           <button
             type="button"
             onClick={() => setShowFactorBreakdown(!showFactorBreakdown)}
@@ -559,7 +569,7 @@ export default function MonitorHomeScreen() {
                   <ul className="space-y-1 text-xs text-slate-700">
                     {riskResult.explanations.map((exp, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-[#991b1b] font-bold">•</span>
+                        <span className="text-[#991b1b] font-bold">â€¢</span>
                         <span>{exp}</span>
                       </li>
                     ))}
@@ -567,7 +577,7 @@ export default function MonitorHomeScreen() {
                 </div>
               )}
 
-              {/* ── Auxiliary ML Model Signal ── */}
+              {/* â”€â”€ Auxiliary ML Model Signal â”€â”€ */}
               <div className="pt-2 border-t border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
@@ -602,69 +612,47 @@ export default function MonitorHomeScreen() {
           )}
         </div>
 
-        {/* ── 6. Live Terrain Risk Map Preview ── */}
-        <div className="space-y-2">
+        {/* ── 6. Live Terrain Risk Map (Real OpenStreetMap Tiles) ── */}
+        <div className={`space-y-2 ${isMobile ? "order-2" : "order-3"}`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-emerald-600" />
-              Live Terrain Risk Map
+              <span>Live Geographic Landslide Risk Map</span>
             </span>
             <Link
               href="/map"
               className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
             >
-              <span>Full Map</span>
+              <span>Full Command GIS</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-white h-48 shadow-sm">
-            {/* Topographic Map Lines */}
-            <svg
-              className="absolute inset-0 w-full h-full opacity-40"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M-10,30 Q80,10 180,50 T380,40" fill="none" stroke="#64748b" strokeWidth="1" />
-              <path d="M-10,70 Q100,50 220,90 T420,80" fill="none" stroke="#64748b" strokeWidth="1" />
-              <path d="M-10,110 Q120,90 240,130 T440,120" fill="none" stroke="#64748b" strokeWidth="1" />
-              <path d="M-10,150 Q140,130 260,170 T460,160" fill="none" stroke="#64748b" strokeWidth="1" />
-            </svg>
-
-            {/* Red Hazard Area */}
-            <div
-              className="absolute top-6 left-16 w-36 h-28 bg-rose-500/20 border border-rose-500/60"
-              style={{ clipPath: "polygon(30% 0%, 90% 20%, 100% 70%, 60% 100%, 0% 80%, 10% 20%)" }}
-            >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <AlertTriangle className="w-5 h-5 text-rose-600 animate-bounce" />
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
+            <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-slate-700">
+                  OpenStreetMap • {locationName}
+                </span>
               </div>
+              <span className="text-slate-500 font-mono text-[10px]">
+                Interactive Tiles &amp; Risk Polygons
+              </span>
             </div>
 
-            {/* Blue Location Dot */}
-            <div className="absolute bottom-6 left-10">
-              <div className="w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white shadow" />
-            </div>
-
-            {/* Green Safe Route Path */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-              <path
-                d="M 50,150 Q 140,110 200,60 T 300,40"
-                fill="none"
-                stroke="#16a34a"
-                strokeWidth="4"
-                strokeLinecap="round"
+            <div className="relative h-64 sm:h-72 lg:h-80 w-full bg-[#edf2f7] overflow-hidden">
+              <LeafletMapDynamic
+                selectedLocation={selectedLocation as "tawang" | "gangtok"}
+                onSelectFeature={() => {}}
+                riskResult={riskResult}
               />
-            </svg>
-
-            {/* Destination Shelter */}
-            <div className="absolute top-6 right-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-[10px] font-bold text-emerald-800 shadow-sm">
-              <span>🏥 {selectedLocation === "gangtok" ? "Sevoke Camp" : "Tawang Shelter"}</span>
             </div>
           </div>
         </div>
 
         {/* ── 7. Quick Actions: Safe Route & Nearest Shelter ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"} gap-3 ${isMobile ? "order-3" : "order-4"}`}>
           {/* Safe Route Card */}
           <Link
             href="/routes"
@@ -680,11 +668,11 @@ export default function MonitorHomeScreen() {
                     Safe Route
                   </h3>
                   <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700">
-                    1.8 km • 8 min
+                    1.8 km â€¢ 8 min
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  {selectedLocation === "gangtok" ? "Sevoke Corridor → High Ground" : "Tawang Sector → Community Center"}
+                  {selectedLocation === "gangtok" ? "Sevoke Corridor â†’ High Ground" : "Tawang Sector â†’ Community Center"}
                 </p>
               </div>
             </div>
@@ -719,12 +707,14 @@ export default function MonitorHomeScreen() {
         </div>
 
         {/* ── 8. Public Data Sources & Attribution ── */}
-        <DataSources />
+        <div className="order-5">
+          <DataSources />
+        </div>
 
         {/* ── 9. Disclaimer Footer ── */}
-        <div className="pt-2 pb-1 text-center">
+        <div className="pt-2 pb-1 text-center order-6">
           <span className="text-[10px] font-mono tracking-widest text-slate-400 font-semibold uppercase">
-            {PROTOTYPE_DISCLAIMER}
+            SENTINALX EARLY WARNING SYSTEM • MINISTRY OF DEVELOPMENT OF NORTH EASTERN REGION (MDONER)
           </span>
         </div>
       </div>
