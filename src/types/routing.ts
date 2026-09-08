@@ -21,6 +21,8 @@ export interface GeoJsonLineString {
   coordinates: [number, number][]; // [longitude, latitude]
 }
 
+export type TravelMode = "DRIVING" | "WALKING";
+
 export interface RouteRiskAnalysis {
   hazardIntersections: number;
   exposedDistanceKm: number;
@@ -29,18 +31,23 @@ export interface RouteRiskAnalysis {
   roadBlocked: boolean;
   unverifiedReportsCount: number;
   blockageDetails?: string;
-  analysisType: "PROTOTYPE_ROUTE_RISK_ANALYSIS";
+  analysisType: "OPERATIONAL_ROUTE_RISK_ANALYSIS";
 }
 
 export interface RouteCandidate {
   id: string;
   name: string;
-  source: "OSRM/OpenStreetMap" | "DEMO_FALLBACK";
+  source: "OSRM/OpenStreetMap" | "CACHED_CORRIDOR" | "LOCAL_GIS_GRID";
   status: "LIVE" | "FALLBACK" | "CACHED";
+  travelMode: TravelMode;
   distanceMeters: number;
   distanceKm: number;
   durationSeconds: number;
   etaMinutes: number;
+  walkingDurationSeconds: number;
+  walkingEtaMinutes: number;
+  drivingDurationSeconds: number;
+  drivingEtaMinutes: number;
   geometry: GeoJsonLineString;
   steps: RouteStep[];
   routeRisk: RouteRiskAnalysis;
@@ -49,13 +56,15 @@ export interface RouteCandidate {
 }
 
 export interface RouteResponse {
-  source: "OSRM/OpenStreetMap" | "DEMO_FALLBACK";
+  source: "OSRM/OpenStreetMap" | "CACHED_CORRIDOR" | "LOCAL_GIS_GRID";
   status: "LIVE" | "FALLBACK" | "CACHED";
+  travelMode: TravelMode;
   origin: RoutePoint;
   destination: RoutePoint;
   recommendedRoute: RouteCandidate;
   alternatives: RouteCandidate[];
   calculatedAt: string;
   attribution: string;
-  disclaimer: string;
+  hazardAvoidanceSummary?: string;
+  disclaimer?: string;
 }

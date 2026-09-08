@@ -79,10 +79,10 @@ export function DeviceSwitcher({ currentMode, onChange }: DeviceSwitcherProps) {
         })}
       </div>
 
-      {/* SIH Demo Mode Pill */}
-      <div className="hidden lg:flex items-center gap-1 pl-2 pr-2.5 py-0.5 ml-1 border-l border-slate-700/70 text-[10px] font-mono text-amber-300 font-bold">
-        <Sparkles className="w-3 h-3 text-amber-400" />
-        <span>DEMO MODE</span>
+      {/* Operational System Status Pill */}
+      <div className="hidden lg:flex items-center gap-1.5 pl-2 pr-2.5 py-0.5 ml-1 border-l border-slate-700/70 text-[10px] font-mono text-emerald-300 font-bold">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span>SYSTEM READY • SIH 2026</span>
       </div>
     </aside>
   );

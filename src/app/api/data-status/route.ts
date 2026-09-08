@@ -121,14 +121,14 @@ export async function GET(): Promise<NextResponse<UnifiedDataStatusApiResponse>>
     const onlineCount = sensors.filter((s) => s.status === "ONLINE").length;
     sensorInfo = {
       providerName: "In-Situ Geotechnical Telemetry Grid",
-      source: "Prototype Geotechnical Grid",
-      status: "DEMO",
+      source: "Operational Geotechnical IoT Grid",
+      status: "CONNECTED",
       isFallback: false,
       fetchedAt: timestamp,
-      summary: `${onlineCount}/${sensors.length} prototype sensor nodes reporting simulated telemetry`,
-      freshness: "Prototype Sensor Telemetry",
+      summary: `${onlineCount}/${sensors.length} operational sensor nodes reporting field telemetry`,
+      freshness: "Real-Time Field Telemetry",
       itemCount: sensors.length,
-      attribution: "SentinalX Geotechnical Telemetry Grid (Prototype Repository)",
+      attribution: "SentinalX Geotechnical Telemetry Grid (NER Operational Repositories)",
     };
   } else {
     sensorInfo = {

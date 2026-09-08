@@ -90,7 +90,7 @@ export function AppShell({ children }: AppShellProps) {
 
               {/* Scrollable Mobile App Viewport */}
               <div
-                className="flex-1 overflow-y-auto overflow-x-hidden relative w-full bg-[#f8fafc] scroll-smooth app-container"
+                className="flex-1 overflow-y-auto overflow-x-hidden relative w-full bg-[#f8fafc] scroll-smooth app-container pb-[76px]"
                 data-device-mode="mobile"
               >
                 {children}
@@ -121,7 +121,7 @@ export function AppShell({ children }: AppShellProps) {
 
               {/* Scrollable Tablet App Viewport */}
               <div
-                className="flex-1 overflow-y-auto overflow-x-hidden relative w-full bg-[#f8fafc] scroll-smooth app-container"
+                className="flex-1 overflow-y-auto overflow-x-hidden relative w-full bg-[#f8fafc] scroll-smooth app-container pb-[76px]"
                 data-device-mode="tablet"
               >
                 {children}

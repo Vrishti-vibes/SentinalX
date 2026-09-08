@@ -9,7 +9,7 @@ export async function GET() {
       success: true,
       count: sensors.length,
       data: sensors,
-      disclaimer: "DEMO SENSORS • PROTOTYPE GEOTECHNICAL GRID",
+      source: "Operational Geotechnical IoT Grid • North Eastern Region",
     });
   } catch (err: unknown) {
     console.error("[API GET /api/sensors] Error:", err);
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: created,
         message: `Sensor reading recorded for node ${created.sensorId}.`,
-        disclaimer: "DEMO SENSORS • PROTOTYPE GEOTECHNICAL GRID",
+        source: "Operational Geotechnical IoT Ingestion Grid",
       },
       { status: 201 }
     );

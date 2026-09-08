@@ -1,4 +1,5 @@
 "use client";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -376,3 +377,5 @@ export default function FieldReportScreen() {
     </div>
   );
 }
+
+

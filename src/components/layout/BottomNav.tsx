@@ -28,7 +28,7 @@ export function BottomNav({ deviceMode = "desktop", isInsideChassis = false }: B
   // Desktop fixed vs Chassis sticky/docked
   const containerStyle: React.CSSProperties = isInsideChassis
     ? {
-        position: "sticky",
+        position: "absolute",
         bottom: 0,
         left: 0,
         right: 0,

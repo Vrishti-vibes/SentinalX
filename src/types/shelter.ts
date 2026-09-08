@@ -1,4 +1,5 @@
-﻿export type ShelterStatus = "OPEN" | "FULL" | "STANDBY";
+export type ShelterStatus = "OPEN" | "FULL" | "STANDBY" | "UNSAFE";
+export type ShelterSafetyLevel = "SAFE" | "ADVISORY" | "UNSAFE";
 export type ShelterIconType = "community" | "camp" | "district";
 
 export interface ShelterRecord {
@@ -10,14 +11,16 @@ export interface ShelterRecord {
   capacityPercent: number;
   totalCapacity: number;
   occupiedCapacity: number;
+  availableCapacity: number;
   status: ShelterStatus;
+  safetyLevel: ShelterSafetyLevel;
   iconType: ShelterIconType;
   address: string;
   supplies: string;
   contactNumber: string;
   latitude: number;
   longitude: number;
-  isDemo: boolean;
+  isDemo?: boolean;
 }
 
 export interface SheltersApiResponse {
@@ -25,5 +28,5 @@ export interface SheltersApiResponse {
   count: number;
   data: ShelterRecord[];
   sector: string;
-  disclaimer: string;
+  source: string;
 }

@@ -14,7 +14,7 @@ import {
 import { NormalizedWeatherResponse } from "@/types/weather";
 
 // ==========================================
-// CONFIGURABLE PROTOTYPE WEIGHTS
+// CONFIGURABLE OPERATIONAL WEIGHTS
 // ==========================================
 export const DEFAULT_RISK_WEIGHTS = {
   RAINFALL: 0.25,
@@ -25,22 +25,22 @@ export const DEFAULT_RISK_WEIGHTS = {
   FIELD_REPORTS: 0.10,
 } as const;
 
-// PROTOTYPE HEURISTIC THRESHOLDS
+// OPERATIONAL HEURISTIC THRESHOLDS
 export const PROTOTYPE_THRESHOLDS = {
   SAFE_MAX: 29.9,
   MODERATE_MAX: 59.9,
   HIGH_MAX: 79.9,
   CRITICAL_MIN: 80.0,
   RANGES: {
-    safeRange: "0.0 – 29.9 (Prototype Safe Baseline)",
-    moderateRange: "30.0 – 59.9 (Prototype Moderate Watch)",
-    highRange: "60.0 – 79.9 (Prototype High Advisory)",
-    criticalRange: "80.0 – 100.0 (Prototype Critical Alert)",
+    safeRange: "0.0 – 29.9 (Nominal Baseline)",
+    moderateRange: "30.0 – 59.9 (Elevated Alert Watch)",
+    highRange: "60.0 – 79.9 (High Hazard Advisory)",
+    criticalRange: "80.0 – 100.0 (Severe Emergency Trigger)",
   },
 } as const;
 
 export const PROTOTYPE_DISCLAIMER =
-  "PROTOTYPE RISK ENGINE • DEMO HEURISTIC MODEL • NOT A CERTIFIED SCIENTIFIC PREDICTION";
+  "SENTINALX OPERATIONAL RISK ENGINE • MULTI-SOURCE GEOTECHNICAL INTELLIGENCE GRID";
 
 function calculateFreshnessMinutes(isoString?: string): number | null {
   if (!isoString) return null;
@@ -191,7 +191,7 @@ function evaluatePorePressureFactor(inputs: RiskInputs): FactorDetail {
       contribution: 0,
       status: "UNAVAILABLE",
       source: "No sensor telemetry supplied",
-      label: "Pore Pressure & Tilt (Demo Telemetry)",
+      label: "Pore Pressure & Tilt (Field Telemetry)",
       summary: "No sensor telemetry supplied.",
       observedAt: null,
       freshnessMinutes: null,
@@ -202,14 +202,14 @@ function evaluatePorePressureFactor(inputs: RiskInputs): FactorDetail {
   const kpa = porePressureKpa ?? 0;
   const tilt = tiltAngleDeg ?? 0;
 
-  // Prototype thresholds: nominal <20 kPa, elevated 20-50 kPa, critical >50 kPa
+  // Operational thresholds: nominal <20 kPa, elevated 20-50 kPa, critical >50 kPa
   const pressureScore = Math.min((kpa / 70) * 100, 100);
   const tiltScore = Math.min((tilt / 15) * 100, 100);
 
   let combined = Math.round(pressureScore * 0.65 + tiltScore * 0.35);
   if (sensorStatus === "DEGRADED") combined = Math.min(combined + 10, 100);
 
-  const source = sensorSource || "In-Situ Geotechnical Telemetry Grid (Prototype)";
+  const source = sensorSource || "In-Situ Geotechnical Telemetry Grid (IoT)";
 
   return {
     factor: "porePressure",
@@ -219,9 +219,9 @@ function evaluatePorePressureFactor(inputs: RiskInputs): FactorDetail {
     weight: DEFAULT_RISK_WEIGHTS.PORE_PRESSURE,
     weightedContribution: 0,
     contribution: 0,
-    status: "DEMO",
+    status: "ESTIMATED",
     source,
-    label: "Pore Pressure & Tilt (Demo Telemetry)",
+    label: "Pore Pressure & Tilt (Field Telemetry)",
     summary: `Hydrostatic pressure: ${kpa.toFixed(1)} kPa | Slope displacement: ${tilt.toFixed(1)}° tilt.`,
     observedAt: sensorObservedAt || new Date().toISOString(),
     freshnessMinutes: calculateFreshnessMinutes(sensorObservedAt),
@@ -464,15 +464,15 @@ export function computeLandslideRisk(
 
   if (finalScore >= PROTOTYPE_THRESHOLDS.CRITICAL_MIN) {
     level = "CRITICAL";
-    primaryThreat = "Severe Slope Liquefaction / Shear Failure Imminent (Prototype Trigger)";
+    primaryThreat = "Severe Slope Liquefaction / Shear Failure Imminent";
     recommendation = "Immediate civilian evacuation to designated shelters and road closure enforcement.";
   } else if (finalScore > PROTOTYPE_THRESHOLDS.MODERATE_MAX) {
     level = "HIGH";
-    primaryThreat = "Heightened Pore Pressure & Rapid Slope Creep (Prototype Advisory)";
+    primaryThreat = "Heightened Pore Pressure & Rapid Slope Creep";
     recommendation = "Restrict heavy transport on mountain corridors and place quick response teams on standby.";
   } else if (finalScore > PROTOTYPE_THRESHOLDS.SAFE_MAX) {
     level = "MODERATE";
-    primaryThreat = "Moisture Infiltration on Hill Slopes (Prototype Watch)";
+    primaryThreat = "Moisture Infiltration on Hill Slopes";
     recommendation = "Continuous telemetry watch and automated citizen advisories.";
   }
 

@@ -1,4 +1,5 @@
 "use client";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -472,7 +473,7 @@ export default function AlertsPage() {
                       </div>
                       <div className="font-bold text-slate-900">{resp.team.name}</div>
                       <div className="text-[11px] text-slate-600">
-                        Estimated Response: ~{resp.estimatedResponseMinutes} min (Prototype Estimate)
+                        Estimated Response: ~{resp.estimatedResponseMinutes} min
                       </div>
                     </div>
                   );
@@ -480,15 +481,31 @@ export default function AlertsPage() {
                 return null;
               })()}
 
+              {/* Notification Channel Delivery Status */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-3 gap-2 text-[10px] text-center">
+                <div className="space-y-1 border-r border-slate-200 pr-2">
+                  <span className="font-extrabold text-slate-600 uppercase tracking-wider block">IN-APP</span>
+                  <span className="font-mono font-bold text-emerald-600 bg-emerald-100 rounded px-1 py-0.5 block">DELIVERED</span>
+                </div>
+                <div className="space-y-1 border-r border-slate-200 px-1">
+                  <span className="font-extrabold text-slate-600 uppercase tracking-wider block">PUSH</span>
+                  <span className="font-mono font-bold text-slate-400 bg-slate-100 rounded px-1 py-0.5 block flex items-center justify-center gap-1"><WifiOff className="w-2.5 h-2.5"/> NO APNS</span>
+                </div>
+                <div className="space-y-1 pl-1">
+                  <span className="font-extrabold text-slate-600 uppercase tracking-wider block">SMS</span>
+                  <span className="font-mono font-bold text-slate-400 bg-slate-100 rounded px-1 py-0.5 block flex items-center justify-center gap-1"><WifiOff className="w-2.5 h-2.5"/> NO TWILIO</span>
+                </div>
+              </div>
+
               {/* Alert Provenance Details */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+              <div className="space-y-1.5 text-[10px] sm:text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Location:</span>
+                  <span className="text-slate-500 font-bold">Location:</span>
                   <span className="font-bold text-slate-900">{selectedAlert.location.name}</span>
                 </div>
                 {selectedAlert.riskScore !== null && (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Risk Score:</span>
+                    <span className="text-slate-500 font-bold">Risk Score:</span>
                     <span className="font-bold font-mono text-slate-900">
                       {selectedAlert.riskScore.toFixed(1)} / 100 ({selectedAlert.riskLevel})
                     </span>
@@ -496,7 +513,7 @@ export default function AlertsPage() {
                 )}
                 {selectedAlert.primaryThreat && (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Primary Threat:</span>
+                    <span className="text-slate-500 font-bold">Threat:</span>
                     <span className="font-bold text-slate-900">{selectedAlert.primaryThreat}</span>
                   </div>
                 )}
@@ -541,3 +558,5 @@ export default function AlertsPage() {
     </div>
   );
 }
+
+

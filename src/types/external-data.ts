@@ -1,5 +1,6 @@
 export type ProviderDataStatus =
   | "LIVE"
+  | "CONNECTED"
   | "VERIFIED_HISTORICAL"
   | "DEMO"
   | "FALLBACK"

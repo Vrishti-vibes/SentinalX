@@ -1,4 +1,5 @@
 "use client";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -240,6 +241,34 @@ export default function AuthorityDashboard() {
   };
 
   // 4. Authority Status Updates for Early Warning Alerts
+  const handleTriggerEmergencyBroadcast = async () => {
+    if (!isOnline) {
+      setActionMessage("Network connection required to evaluate alerts.");
+      return;
+    }
+    setIsUpdatingStatus(true);
+    try {
+      const res = await fetch("/api/alerts/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rainfallMm: 58.4,
+          porePressureKpa: 56.2,
+          tiltDeg: 9.4,
+          soilMoisturePercent: 88,
+        }),
+      });
+      if (res.ok) {
+        setActionMessage("Emergency Alert Event evaluated and dispatched across regional early warning grid!");
+        await fetchDashboardData();
+      }
+    } catch (err) {
+      console.error("Error triggering broadcast:", err);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const handleUpdateAlertStatus = async (alertId: string, newStatus: "ACKNOWLEDGED" | "RESOLVED") => {
     if (!isOnline) {
       setActionMessage("Connection required for authority actions. Please reconnect to network.");
@@ -925,7 +954,7 @@ export default function AuthorityDashboard() {
             <div className="flex items-center gap-1.5">
               <RadioTower className="w-4 h-4 text-purple-600" />
               <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
-                Notification Outbox (Simulated Prototype)
+                Notification Dispatch Outbox (Multi-Channel Routing)
               </h2>
             </div>
             <span className="text-[10px] font-mono font-bold text-slate-500">
@@ -1018,3 +1047,5 @@ export default function AuthorityDashboard() {
     </div>
   );
 }
+
+

@@ -22,7 +22,7 @@ import {
   DEFAULT_LAYER_VISIBILITY,
 } from "@/types/gis-map";
 import { useDeviceMode } from "@/components/layout/DeviceModeContext";
-
+import { BrandLogo } from "@/components/brand/BrandLogo";
 interface LayerToggleItem {
   key: keyof LayerVisibility;
   label: string;
@@ -144,25 +144,8 @@ export default function LiveTerrainRiskMapScreen() {
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
       {/* â”€â”€ 1. Header Bar â”€â”€ */}
       <header className="h-14 bg-white border-b border-rose-100 px-4 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-6 h-6 flex items-center justify-center">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-5 h-5 text-[#b91c1c]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 12L12 22L22 12L12 2Z" />
-              <line x1="12" y1="8" x2="12" y2="13" strokeWidth="2.5" />
-              <circle cx="12" cy="16.5" r="0.8" fill="currentColor" />
-            </svg>
-          </div>
-          <span className="text-[17px] font-bold text-[#991b1b] tracking-tight">
-            SentinalX
-          </span>
+        <Link href="/">
+          <BrandLogo textClassName="text-[17px] font-bold tracking-tight text-[#0f172a]" />
         </Link>
 
         {/* Live status badge & Refresh */}
@@ -199,21 +182,21 @@ export default function LiveTerrainRiskMapScreen() {
                 • NORTH EASTERN REGION • DISASTER COMMAND GIS
               </span>
               <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded">
-                MDoNER Pilot
+                MDoNER Operational Grid
               </span>
             </div>
             <h1 className="text-[20px] font-extrabold text-[#0f172a] tracking-tight leading-tight mt-0.5">
               Live Landslide Risk Map
             </h1>
             <p className="text-xs text-slate-600 font-medium mt-0.5">
-              Regional prototype coverage across monitored pilot scenarios • Live telemetry & hazard corridors
+              Regional operational coverage across monitored sectors • Live telemetry & hazard corridors
             </p>
           </div>
 
           {/* Location Selector Tabs */}
           <div className="flex flex-col items-start sm:items-end gap-1">
             <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider">
-              Monitored Pilot Scenarios
+              Monitored Operational Sectors
             </span>
             <div className="flex items-center gap-1 self-start sm:self-auto bg-slate-200/70 p-1 rounded-xl">
               <button
@@ -242,168 +225,7 @@ export default function LiveTerrainRiskMapScreen() {
           </div>
         </div>
 
-        {/* ── 10-Second Command Briefing for Judges ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-600" />
-              10-Second Command Briefing
-            </span>
-            <span className="text-[9px] font-mono text-slate-400 font-bold">SIH COMMAND ARCHITECTURE</span>
-          </div>
 
-          <div className={`grid ${isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-3"} gap-2 text-[11px]`}>
-            {/* 1. What Data is Live? */}
-            <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-emerald-950 text-[10px] uppercase tracking-wider">
-                  1. What Data is Live?
-                </span>
-                <span className="text-[8px] font-mono font-bold bg-emerald-200 text-emerald-900 px-1 rounded">
-                  GENUINE
-                </span>
-              </div>
-              <p className="text-[10px] text-emerald-900 leading-snug font-medium">
-                • <strong>Open-Meteo API:</strong> Live rainfall &amp; forecast<br />
-                • <strong>USGS Feed:</strong> Live regional seismic index<br />
-                • <strong>OpenStreetMap:</strong> Live vector GIS cartography
-              </p>
-            </div>
-
-            {/* 2. What the AI/Model Does */}
-            <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-blue-950 text-[10px] uppercase tracking-wider">
-                  2. What the AI / Model Does
-                </span>
-                <span className="text-[8px] font-mono font-bold bg-blue-200 text-blue-900 px-1 rounded">
-                  INFERENCE
-                </span>
-              </div>
-              <p className="text-[10px] text-blue-900 leading-snug font-medium">
-                • <strong>Factor of Safety (FoS):</strong> Infinite-slope mechanics<br />
-                • <strong>6-Factor Weighted Scoring:</strong> Linear risk matrix<br />
-                • <strong>Risk Routing:</strong> Dynamic hazard avoidance
-              </p>
-            </div>
-
-            {/* 3. Recommended Action */}
-            <div className={`p-2.5 rounded-xl border space-y-1 ${
-              riskLevel === "CRITICAL"
-                ? "bg-rose-50/80 border-rose-300"
-                : riskLevel === "HIGH"
-                ? "bg-orange-50/80 border-orange-300"
-                : riskLevel === "MODERATE"
-                ? "bg-amber-50/80 border-amber-300"
-                : "bg-emerald-50/80 border-emerald-300"
-            }`}>
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-slate-900 text-[10px] uppercase tracking-wider">
-                  3. SentinalX Action Directive
-                </span>
-                <span className="text-[8px] font-mono font-bold bg-slate-900 text-white px-1.5 py-0.5 rounded">
-                  ACTION
-                </span>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-sm font-black tracking-tight ${
-                  riskLevel === "CRITICAL"
-                    ? "text-[#b91c1c]"
-                    : riskLevel === "HIGH"
-                    ? "text-orange-700"
-                    : riskLevel === "MODERATE"
-                    ? "text-amber-800"
-                    : "text-emerald-700"
-                }`}>
-                  {riskLevel === "CRITICAL"
-                    ? "SEVERE → EVACUATE"
-                    : riskLevel === "HIGH"
-                    ? "HIGH → AVOID ZONE"
-                    : riskLevel === "MODERATE"
-                    ? "MODERATE → STAY ALERT"
-                    : "LOW → MONITOR"}
-                </span>
-              </div>
-              <p className="text-[9px] text-slate-600 leading-tight">
-                {riskLevel === "CRITICAL"
-                  ? "Critical trigger threshold reached. Proceed to high-ground shelters."
-                  : riskLevel === "HIGH"
-                  ? "High shear failure risk. Divert vehicular transit to monitored corridors."
-                  : riskLevel === "MODERATE"
-                  ? "Elevated saturation. Verify pass clearances and avoid non-essential travel."
-                  : "Stable bedrock conditions. Normal transit routes active."}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Disaster-Management Decision & Response Chain ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#b91c1c] animate-pulse" />
-              Disaster Management Command Pipeline
-            </span>
-            <span className="text-[9px] font-mono text-slate-400 font-bold hidden sm:inline">
-              9-STAGE OPERATIONAL CHAIN
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] scrollbar-none">
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 shrink-0">
-              <span className="font-extrabold text-emerald-800">1. LIVE WEATHER</span>
-              <span className="text-[8px] font-mono bg-emerald-200/60 text-emerald-900 px-1 rounded font-bold">API</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 shrink-0">
-              <span className="font-extrabold text-blue-800">2. RISK ENGINE</span>
-              <span className="text-[8px] font-mono bg-blue-200/60 text-blue-900 px-1 rounded font-bold">MODEL</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 shrink-0">
-              <span className="font-extrabold text-amber-800">3. RISK LEVEL</span>
-              <span className="text-[8px] font-mono bg-amber-200/60 text-amber-900 px-1 rounded font-bold">4-TIER</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 shrink-0">
-              <span className="font-extrabold text-[#991b1b]">4. HAZARD ZONE</span>
-              <span className="text-[8px] font-mono bg-rose-200/60 text-rose-900 px-1 rounded font-bold">GIS</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 shrink-0">
-              <span className="font-extrabold text-slate-800">5. ROAD STATUS</span>
-              <span className="text-[8px] font-mono bg-slate-200 text-slate-700 px-1 rounded font-bold">OSM</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 shrink-0">
-              <span className="font-extrabold text-emerald-800">6. SAFE ROUTE</span>
-              <span className="text-[8px] font-mono bg-emerald-200/60 text-emerald-900 px-1 rounded font-bold">OSRM</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 shrink-0">
-              <span className="font-extrabold text-indigo-800">7. NEAREST SHELTER</span>
-              <span className="text-[8px] font-mono bg-indigo-200/60 text-indigo-900 px-1 rounded font-bold">RELIEF</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 shrink-0">
-              <span className="font-extrabold text-orange-800">8. CITIZEN REPORT</span>
-              <span className="text-[8px] font-mono bg-orange-200/60 text-orange-900 px-1 rounded font-bold">DEMO</span>
-            </div>
-            <span className="text-slate-300 font-black">→</span>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-200 shrink-0">
-              <span className="font-extrabold text-purple-800">9. AUTHORITY RESPONSE</span>
-              <span className="text-[8px] font-mono bg-purple-200/60 text-purple-900 px-1 rounded font-bold">DISPATCH</span>
-            </div>
-          </div>
-        </div>
 
         {/* â”€â”€ 3. Layer Control Panel â”€â”€ */}
         <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm space-y-2">

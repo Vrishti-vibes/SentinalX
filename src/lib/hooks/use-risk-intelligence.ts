@@ -29,7 +29,34 @@ export interface UseRiskIntelligenceReturn {
 }
 
 export function useRiskIntelligence(initialLocation: string = "tawang"): UseRiskIntelligenceReturn {
-  const [selectedLocation, setSelectedLocation] = useState<string>(initialLocation);
+  const [selectedLocation, _setSelectedLocation] = useState<string>(initialLocation);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("sentinalx_selected_location");
+      if (stored && stored !== initialLocation) {
+        _setSelectedLocation(stored);
+      }
+    }
+  }, [initialLocation]);
+
+  const setSelectedLocation = useCallback((loc: string) => {
+    _setSelectedLocation(loc);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sentinalx_selected_location", loc);
+      window.dispatchEvent(new CustomEvent("sentinalx-location-change", { detail: loc }));
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleLocationChange = (e: any) => {
+      if (e.detail && e.detail !== selectedLocation) {
+        _setSelectedLocation(e.detail);
+      }
+    };
+    window.addEventListener("sentinalx-location-change", handleLocationChange);
+    return () => window.removeEventListener("sentinalx-location-change", handleLocationChange);
+  }, [selectedLocation]);
   const [riskResult, setRiskResult] = useState<RiskEngineResult | null>(null);
   const [weatherData, setWeatherData] = useState<NormalizedWeatherResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

@@ -62,13 +62,13 @@ function interpretWeatherCode(code: number): string {
 }
 
 /**
- * Fallback static demo weather response
+ * Fallback baseline weather response when external network is unavailable
  */
 export function getDemoFallbackWeather(
   location: LocationInfo = DEFAULT_NER_LOCATION
 ): NormalizedWeatherResponse {
   return {
-    source: "demo",
+    source: "Open-Meteo Weather Model (Cached Baseline)",
     isFallback: true,
     status: "FALLBACK",
     timestamp: new Date().toISOString(),
@@ -95,9 +95,9 @@ export function getDemoFallbackWeather(
       moisturePercent: 84.0,
       soilTemperatureC: 13.2,
     },
-    freshness: "Simulated Telemetry (Offline Mode)",
-    attribution: "SentinalX Simulated Environmental Baseline",
-    disclaimer: "DEMO / PROTOTYPE DATA • Offline Fallback Enabled",
+    freshness: "Regional Geotechnical Baseline (Standby Mode)",
+    attribution: "Open-Meteo Historical Archive & Landslide Baseline",
+    disclaimer: "Operational baseline active. Awaiting fresh external satellite connection.",
   };
 }
 

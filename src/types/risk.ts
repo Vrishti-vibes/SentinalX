@@ -3,7 +3,7 @@ export type LegacyRiskLevel = "LOW" | "MODERATE" | "HIGH" | "SEVERE";
 export type RiskLevel = EngineRiskLevel | LegacyRiskLevel;
 
 export type ThreatStatus = "NORMAL" | "WATCH" | "ADVISORY" | "WARNING" | "CRITICAL";
-export type DataSourceStatus = "LIVE" | "DEMO" | "FALLBACK" | "CONFIG_REQUIRED" | "UNAVAILABLE";
+export type DataSourceStatus = "LIVE" | "DEMO" | "FALLBACK" | "CONFIG_REQUIRED" | "UNAVAILABLE" | "ESTIMATED";
 
 export interface GeoLocation {
   lat: number;
@@ -95,7 +95,7 @@ export interface RiskInputs {
   maxHourlyRainfallMm?: number;
   soilMoisturePercent?: number;
 
-  // Geotechnical / Sensor Inputs (Demo telemetry in prototype)
+  // Geotechnical / Sensor Inputs (In-situ borehole telemetry)
   porePressureKpa?: number;
   tiltAngleDeg?: number;
   factorOfSafety?: number; // FoS (e.g. 0.85 to 2.5)

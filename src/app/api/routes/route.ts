@@ -43,13 +43,14 @@ export async function GET(request: NextRequest) {
 
     const originName = searchParams.get("originName") || undefined;
     const destName = searchParams.get("destName") || undefined;
+    const mode = (searchParams.get("mode") === "walking" ? "WALKING" : "DRIVING") as "DRIVING" | "WALKING";
 
     const routeData = await RoutingService.computeSafeRoute(
       fromLat,
       fromLon,
       toLat,
       toLon,
-      { originName, destName }
+      { originName, destName, travelMode: mode }
     );
 
     return NextResponse.json({

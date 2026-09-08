@@ -32,7 +32,7 @@ export interface SoilConditions {
 }
 
 export interface NormalizedWeatherResponse {
-  source: "Open-Meteo" | "demo";
+  source: string;
   isFallback: boolean;
   status: "LIVE" | "FALLBACK";
   timestamp: string;

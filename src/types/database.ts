@@ -93,15 +93,15 @@ export interface RiskAssessmentRecord {
   longitude?: number;
   timestamp: string;
   score: number;
-  level: "SAFE" | "MODERATE" | "HIGH" | "CRITICAL";
+  level: "LOW" | "MODERATE" | "HIGH" | "SEVERE" | "CRITICAL" | "SAFE";
   primaryThreat: string;
   recommendation: string;
   inputCoverageRatio: number;
   sources: {
-    weather: "LIVE" | "DEMO" | "UNAVAILABLE";
-    sensors: "LIVE" | "DEMO" | "UNAVAILABLE";
-    fieldReports: "LIVE" | "DEMO" | "UNAVAILABLE";
-    terrain: "LIVE" | "DEMO" | "UNAVAILABLE";
+    weather: "LIVE" | "CACHED" | "UNAVAILABLE";
+    sensors: "LIVE" | "STANDBY" | "UNAVAILABLE";
+    fieldReports: "LIVE" | "STANDBY" | "UNAVAILABLE";
+    terrain: "LIVE" | "CACHED" | "UNAVAILABLE";
   };
   factorSummary: {
     rainfallScore: number;
@@ -111,7 +111,7 @@ export interface RiskAssessmentRecord {
     groundMotionScore: number;
     fieldReportsScore: number;
   };
-  storage: "SUPABASE_POSTGRES" | "DEMO_IN_MEMORY";
+  storage: "SUPABASE_POSTGRES" | "IN_MEMORY_STANDBY" | "DEMO_IN_MEMORY";
 }
 
 // ==========================================
@@ -123,4 +123,73 @@ export interface ReportStatusHistoryRecord {
   status: ResponseStatus;
   message: string;
   timestamp: string; // ISO 8601
+}
+
+// ==========================================
+// E. USERS & ROLES
+// ==========================================
+export interface UserRecord {
+  id: string;
+  email?: string;
+  phoneNumber?: string;
+  fullName: string;
+  role: "CITIZEN" | "RESPONDER" | "AUTHORITY" | "ADMIN";
+  state: string;
+  district?: string;
+  notificationPreferences: {
+    inApp: boolean;
+    sms: boolean;
+    push: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==========================================
+// F. ROADS AND ROAD CONDITIONS
+// ==========================================
+export interface RoadRecord {
+  id: string;
+  locationId: string;
+  name: string;
+  highwayRef?: string;
+  status: "CLEAR" | "CAUTION" | "BLOCKED";
+  blockageReason?: string;
+  coordinates?: [number, number][];
+  updatedAt: string;
+}
+
+// ==========================================
+// G. NOTIFICATION DELIVERIES
+// ==========================================
+export interface NotificationDeliveryRecord {
+  id: string;
+  alertId?: string;
+  userId?: string;
+  channel: "IN_APP" | "SMS" | "PUSH" | "EMAIL";
+  recipientType: "CITIZEN" | "RESPONDER" | "AUTHORITY";
+  targetDestination: string;
+  severity: string;
+  title: string;
+  message: string;
+  deliveryStatus: "QUEUED" | "SENT" | "DELIVERED" | "FAILED" | "PROVIDER_NOT_CONFIGURED";
+  deliveryProvider?: string;
+  deliveryError?: string;
+  createdAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+}
+
+// ==========================================
+// H. AUDIT LOGS
+// ==========================================
+export interface AuditLogRecord {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  actorId?: string;
+  actorRole?: string;
+  details?: Record<string, unknown>;
+  createdAt: string;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -380,3 +381,5 @@ export default function EmergencyPage() {
     </Suspense>
   );
 }
+
+

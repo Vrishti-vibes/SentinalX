@@ -1,9 +1,9 @@
 import { AlertRecord, AlertSeverity, AlertType, AlertStatus } from "@/types/alert";
 import { getDbConfig, supabaseRestQuery } from "./client";
 
-export const PROTOTYPE_ALERT_SOURCE = "SentinalX Prototype Alert Engine";
+export const PROTOTYPE_ALERT_SOURCE = "SentinalX Early Warning Engine";
 
-// Seed alerts for demo baseline in NER
+// Seed alerts for baseline in NER
 const SEED_ALERTS: AlertRecord[] = [
   {
     id: "ALT-TW-01",
@@ -19,7 +19,7 @@ const SEED_ALERTS: AlertRecord[] = [
     },
     riskScore: 78.4,
     riskLevel: "HIGH",
-    primaryThreat: "Moisture Infiltration on Hill Slopes (Prototype Watch)",
+    primaryThreat: "Moisture Infiltration on Hill Slopes (Active Advisory)",
     triggeredBy: ["Rainfall > 35mm/24h", "Pore Pressure > 40 kPa", "Citizen Verified Report"],
     status: "ACTIVE",
     createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),

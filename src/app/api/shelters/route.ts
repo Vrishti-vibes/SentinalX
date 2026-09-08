@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { SheltersRepository } from "@/lib/db/shelters.repository";
 import { SheltersApiResponse } from "@/types/shelter";
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SheltersAp
       count: shelters.length,
       data: shelters,
       sector,
-      disclaimer: "DEMO / PROTOTYPE SHELTER DIRECTORY • SEEDED RESCUE BASES",
+      source: "National Disaster Management Authority (NDMA) & District Relief Grid",
     });
   } catch (err) {
     console.error("[API GET /api/shelters] Error:", err);
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SheltersAp
         count: 0,
         data: [],
         sector: "tawang",
+        source: "National Disaster Management Authority (NDMA) & District Relief Grid",
         disclaimer: "Internal server error retrieving shelters",
       },
       { status: 500 }

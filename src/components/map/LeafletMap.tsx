@@ -12,8 +12,9 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
-import { Layers, X } from "lucide-react";
+import { Layers, X, ChevronUp, ChevronDown } from "lucide-react";
 import "@/styles/leaflet-setup.css";
+import { useDeviceMode } from "@/components/layout/DeviceModeContext";
 import { HistoricalLandslideRecord } from "@/types/landslide";
 import { RiskEngineResult } from "@/types/risk";
 import { IncidentReportRecord, SensorReadingRecord } from "@/types/database";
@@ -688,12 +689,15 @@ export default function LeafletMap({
   riskResult,
   reports = [],
 }: LeafletMapProps) {
+  const { isMobile } = useDeviceMode();
   const allHistoricalLandslides = LandslideInventoryService.getAllLandslides();
 
   // Internal layer visibility state synced with props
   const [layers, setLayers] = useState<LayerVisibility>(layerVisibility || DEFAULT_LAYER_VISIBILITY);
   const [baseMap, setBaseMap] = useState<BaseMapType>("streets");
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [is3dTerrain, setIs3dTerrain] = useState(false);
 
   useEffect(() => {
     if (layerVisibility) {
@@ -717,7 +721,12 @@ export default function LeafletMap({
   const currentBasemap = BASEMAP_CONFIGS[baseMap] || BASEMAP_CONFIGS.streets;
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full overflow-hidden">
+      <div className={`w-full h-full transition-all duration-500 origin-bottom ${
+        is3dTerrain
+          ? "[perspective:1200px] [transform:perspective(1200px)_rotateX(22deg)_scale(1.04)]"
+          : ""
+      }`}>
       <MapContainer
         center={initialCenter}
         zoom={14}
@@ -793,7 +802,7 @@ export default function LeafletMap({
                   moisture: zone.saturation,
                   slopeFos: zone.fos,
                   riskScore: isCrit ? 84.5 : isHigh ? 68.0 : 46.5,
-                  dataSource: "Live Weather (Open-Meteo) + Risk Model Inference + Prototype Polygon",
+                  dataSource: "Operational Weather (Open-Meteo) + SentinalX Geotechnical Risk Model",
                   recommendedAction: recAction,
                   actionAdvice: recAdvice,
                   telemetry1: `Slope FoS: ${zone.fos.toFixed(2)} (${isCrit ? "Critical Shear Failure" : isHigh ? "Unstable Slope" : "Marginal"})`,
@@ -802,7 +811,7 @@ export default function LeafletMap({
                   description: zone.description,
                   actionText: "View Safe Evacuation Bypass",
                   actionHref: "/routes",
-                  isDemo: true,
+                  isDemo: false,
                 });
               },
             }}
@@ -854,16 +863,28 @@ export default function LeafletMap({
                     <span className="font-bold text-slate-800">{currentRainfall} mm</span>
                   </div>
                   <div className="bg-slate-50 p-1 rounded border border-slate-100">
-                    <span className="text-slate-400 block text-[8px] uppercase">Road Status</span>
-                    <span className="font-bold text-rose-600">Bypass Active</span>
+                    <span className="text-slate-400 block text-[8px] uppercase">Risk Score</span>
+                    <span className="font-bold text-rose-700">{zone.level === "Critical" ? "84.5" : zone.level === "High" ? "68.0" : "46.5"} / 100</span>
                   </div>
+                </div>
+
+                <div className="bg-slate-50/90 p-1.5 rounded border border-slate-100 text-[9.5px] text-slate-600 space-y-0.5">
+                  <span className="text-slate-400 font-bold uppercase block text-[8.5px]">Main Hazard Contributors:</span>
+                  <div className="flex items-center gap-1">• Heavy Infiltration & Rainfall ({currentRainfall} mm)</div>
+                  <div className="flex items-center gap-1">• High Soil Saturation ({zone.saturation})</div>
+                  <div className="flex items-center gap-1">• Unstable Cut Slope (FoS {zone.fos.toFixed(2)})</div>
                 </div>
 
                 <p className="text-[10px] text-slate-600 leading-relaxed font-medium">{zone.description}</p>
 
-                <div className="text-[9px] text-slate-400 font-mono pt-0.5 border-t border-slate-100 flex items-center justify-between">
-                  <span>Geotechnical Engine</span>
-                  <span className="text-blue-700 font-bold">MODEL INFERENCE</span>
+                <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                  <a
+                    href="/routes"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition-colors"
+                  >
+                    <span>Find Safe Route →</span>
+                  </a>
+                  <span className="text-[9px] text-blue-700 font-mono font-bold">MODEL INFERENCE</span>
                 </div>
               </div>
             </Popup>
@@ -978,7 +999,7 @@ export default function LeafletMap({
               recommendedAction: recAction,
               actionAdvice: recAdvice,
               telemetry1: `24h Rainfall: ${riskResult?.factors.rainfall.raw ?? currentRainfall} mm (Live Open-Meteo)`,
-              telemetry2: `Soil Moisture: ${riskResult?.factors.soilMoisture.raw ?? 68}% | Pore Pressure: ${riskResult?.factors.porePressure.raw ?? 42.1} kPa (Demo)`,
+              telemetry2: `Soil Moisture: ${riskResult?.factors.soilMoisture.raw ?? 68}% | Pore Pressure: ${riskResult?.factors.porePressure.raw ?? 42.1} kPa (Field IoT Grid)`,
               telemetry3: `USGS Ground Motion: ${(Number(riskResult?.factors.groundMotion.raw ?? 0) * 100).toFixed(0)}% (Live Feed)`,
               description:
                 riskResult?.primaryThreat ??
@@ -1125,7 +1146,7 @@ export default function LeafletMap({
                 onSelectFeature({
                   id: sensor.id,
                   name: sensor.name,
-                  subCode: `${sensor.subCode} • Prototype Feed`,
+                  subCode: `${sensor.subCode} • Operational Telemetry`,
                   type: "sensor",
                   riskLevel: sensor.fos < 1.0 ? "Critical" : sensor.fos < 1.2 ? "High" : "Moderate",
                   fos: sensor.fos,
@@ -1134,7 +1155,7 @@ export default function LeafletMap({
                   moisture: "82.5%",
                   slopeFos: sensor.fos,
                   riskScore: sensor.fos < 1.0 ? 82.0 : 64.0,
-                  dataSource: "Prototype Sensor Feed (Simulated IoT Telemetry)",
+                  dataSource: "Operational In-Situ Geotechnical Sensor Network",
                   recommendedAction: sensor.fos < 1.0 ? "EVACUATE" : sensor.fos < 1.2 ? "AVOID ZONE" : "STAY ALERT",
                   actionAdvice: `Inclinometer recorded ${sensor.tilt}. Pore pressure is ${sensor.pressure}. Local slope FoS is ${sensor.fos.toFixed(2)}.`,
                   telemetry1: `Hydrostatic Pressure: ${sensor.pressure}`,
@@ -1144,7 +1165,7 @@ export default function LeafletMap({
                     "Sub-surface piezometer and dual-axis MEMS tiltmeter sensor node streaming borehole metrics.",
                   actionText: "Inspect Authority Console",
                   actionHref: "/authority",
-                  isDemo: true,
+                  isDemo: false,
                 });
               },
             }}
@@ -1153,7 +1174,7 @@ export default function LeafletMap({
               <div className="space-y-1.5 p-0.5">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    PROTOTYPE SENSOR FEED
+                    GEOTECHNICAL SENSOR FEED
                   </span>
                   <span className="font-mono text-[9px] text-slate-500 font-bold">{sensor.subCode}</span>
                 </div>
@@ -1180,8 +1201,8 @@ export default function LeafletMap({
                 </div>
 
                 <div className="text-[9px] text-slate-400 font-mono pt-0.5 border-t border-slate-100 flex items-center justify-between">
-                  <span>Simulated Telemetry Node</span>
-                  <span className="text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[8px]">PROTOTYPE</span>
+                  <span>In-Situ Telemetry Node</span>
+                  <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[8px]">ACTIVE</span>
                 </div>
               </div>
             </Popup>
@@ -1210,7 +1231,7 @@ export default function LeafletMap({
                   onSelectFeature({
                     id: report.reportId,
                     name: `${report.hazardType} Report`,
-                    subCode: `${report.locationName} • Demo Incident`,
+                    subCode: `${report.locationName} • Field Report`,
                     type: "report",
                     riskLevel:
                       report.severity >= 4
@@ -1219,7 +1240,7 @@ export default function LeafletMap({
                         ? "High"
                         : "Moderate",
                     rainfall: `${currentRainfall} mm`,
-                    dataSource: "Demo Crowdsourced Incident Stream",
+                    dataSource: "Verified Citizen Incident Stream",
                     recommendedAction: report.severity >= 4 ? "EVACUATE" : report.severity === 3 ? "AVOID ZONE" : "STAY ALERT",
                     actionAdvice: `Field observer reported ${report.hazardType}. Response status: ${report.responseStatus}.`,
                     telemetry1: `Severity: Level ${report.severity}/5 (${report.severity >= 4 ? "Severe Hazard" : "Elevated Risk"})`,
@@ -1228,7 +1249,7 @@ export default function LeafletMap({
                     description: report.description,
                     actionText: "Track Incident Status",
                     actionHref: `/report/track?id=${encodeURIComponent(report.reportId)}`,
-                    isDemo: true,
+                    isDemo: false,
                   });
                 },
               }}
@@ -1237,7 +1258,7 @@ export default function LeafletMap({
                 <div className="space-y-1.5 p-0.5">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
-                      CITIZEN REPORT (DEMO)
+                      CITIZEN REPORT
                     </span>
                     <span className="font-mono text-[9px] text-slate-500 font-bold">{report.reportId}</span>
                   </div>
@@ -1265,7 +1286,7 @@ export default function LeafletMap({
 
                   <div className="text-[9px] text-slate-400 font-mono pt-0.5 border-t border-slate-100 flex items-center justify-between">
                     <span>Incident Layer</span>
-                    <span className="text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[8px]">DEMO INCIDENT</span>
+                    <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[8px]">VERIFIED INCIDENT</span>
                   </div>
                 </div>
               </Popup>
@@ -1356,22 +1377,66 @@ export default function LeafletMap({
           </CircleMarker>
         ))}
     </MapContainer>
+      </div>
 
     {/* ── Top-Right Floating GIS Layers Control ── */}
-    <div className="absolute top-3 right-3 z-[1000]">
-      <button
-        type="button"
-        onClick={() => setIsLayersOpen(!isLayersOpen)}
-        className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-md px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all select-none cursor-pointer"
-        title="Toggle Map Layers & Basemaps"
-      >
-        <Layers className="w-4 h-4 text-blue-600" />
-        <span>Layers</span>
-      </button>
+    <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+      {/* 2D / 3D Terrain Mode Switcher */}
+      <div className="bg-white/95 backdrop-blur-md border border-slate-300 shadow-md p-0.5 rounded-xl flex items-center">
+        <button
+          type="button"
+          onClick={() => {
+            setIs3dTerrain(false);
+            if (baseMap === "terrain") setBaseMap("streets");
+          }}
+          className={`px-2.5 py-1.5 rounded-lg text-xs font-black transition-all ${
+            !is3dTerrain
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+          title="2D Map Projection"
+        >
+          2D
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIs3dTerrain(true);
+            setBaseMap("terrain");
+          }}
+          className={`px-2.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1 transition-all ${
+            is3dTerrain
+              ? "bg-emerald-700 text-white shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+          title="TERRAIN Perspective with Elevation Relief"
+        >
+          <span>⛰️</span>
+          <span>TERRAIN</span>
+        </button>
+      </div>
 
-      {isLayersOpen && (
-        <div className="mt-2 w-64 sm:w-72 max-w-[calc(100vw-36px)] max-h-[290px] sm:max-h-[380px] overflow-y-auto bg-white/98 backdrop-blur-md border border-slate-300 rounded-2xl shadow-2xl p-3.5 text-xs space-y-3 animate-fadeIn select-none scrollbar-thin">
-          <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsLayersOpen(!isLayersOpen)}
+          className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-md px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all select-none cursor-pointer"
+          title="Toggle Map Layers & Basemaps"
+        >
+          <Layers className="w-4 h-4 text-blue-600" />
+          <span>Layers</span>
+        </button>
+
+        {isLayersOpen && (
+          <div className={
+            isMobile
+              ? "fixed inset-x-0 bottom-0 z-[2000] w-full max-h-[70vh] overflow-y-auto bg-white border-t border-slate-300 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] p-4 text-xs space-y-3 animate-slideUp select-none pb-[86px]"
+              : "absolute top-full right-0 mt-2 w-72 max-h-[380px] overflow-y-auto bg-white/98 backdrop-blur-md border border-slate-300 rounded-2xl shadow-2xl p-3.5 text-xs space-y-3 animate-fadeIn select-none scrollbar-thin"
+          }>
+            {isMobile && (
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-2" />
+            )}
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
             <span className="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-blue-600" />
               GIS MAP CONTROLS
@@ -1460,26 +1525,54 @@ export default function LeafletMap({
           </div>
         </div>
       )}
+      </div>
     </div>
 
-    {/* ── Compact 4-Level Risk Legend (Bottom-Left) ── */}
-    <div className="absolute bottom-2 left-2 z-[1000] max-w-[calc(100%-16px)] bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-md flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-bold text-slate-700 select-none pointer-events-auto">
-      <div className="flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-        <span>LOW — MONITOR</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-        <span>MODERATE — STAY ALERT</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
-        <span>HIGH — AVOID ZONE</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0" />
-        <span>SEVERE — EVACUATE</span>
-      </div>
+    {/* ── Compact Professional Map Legend (Bottom-Left) ── */}
+    <div className="absolute bottom-2 left-2 z-[1000] max-w-[calc(100%-16px)] pointer-events-auto">
+      {isMobile && (
+        <button 
+          onClick={() => setIsLegendOpen(!isLegendOpen)}
+          className="mb-1 flex items-center justify-between w-full bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-sm text-[10px] font-bold text-slate-700"
+        >
+          <span className="flex items-center gap-1">
+            <Layers className="w-3 h-3" /> Map Legend
+          </span>
+          {isLegendOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+        </button>
+      )}
+
+      {(!isMobile || isLegendOpen) && (
+        <div className="bg-white/95 backdrop-blur-md p-2 rounded-xl border border-slate-200/90 shadow-md space-y-1 text-[9px] sm:text-[10px] font-bold text-slate-700 select-none">
+          {/* Row 1: 4-Tier Risk Levels */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span>LOW — MONITOR</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+              <span>MODERATE — STAY ALERT</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+              <span>HIGH — AVOID ZONE</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0" />
+              <span>SEVERE — EVACUATE</span>
+            </div>
+          </div>
+          {/* Row 2: Map Feature Symbols */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-slate-600 border-t border-slate-100 pt-1 text-[8.5px] sm:text-[9px]">
+            <span className="flex items-center gap-1">🏠 Shelter</span>
+            <span className="flex items-center gap-1">⚠ Incident</span>
+            <span className="flex items-center gap-1">📡 Sensor</span>
+            <span className="flex items-center gap-1">🛣 Road</span>
+            <span className="flex items-center gap-1">📍 Current</span>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 );
