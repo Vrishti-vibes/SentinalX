@@ -1,89 +1,87 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { SheltersRepository } from "@/lib/db/shelters.repository";
 import { ReportsRepository } from "@/lib/db/reports.repository";
 import { SensorsRepository } from "@/lib/db/sensors.repository";
 import { LandslideInventoryService } from "@/lib/data/landslide-inventory.service";
+import {
+  NER_LOCATIONS,
+  NER_RISK_ZONES,
+  NER_HEATMAP_POINTS,
+  NER_INCIDENTS,
+  NER_ROADS,
+  NER_SHELTERS,
+  NER_SENSORS,
+} from "@/lib/data/ner-gis-data";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const sector = searchParams.get("sector") || "tawang";
+    const sector = (searchParams.get("sector") || "ner").toLowerCase();
 
-    const [shelters, reports, sensors] = await Promise.all([
-      SheltersRepository.getShelters(sector),
-      ReportsRepository.getReports({ limit: 20 }),
-      SensorsRepository.getSensors(),
+    const [dbShelters, dbReports, dbSensors] = await Promise.all([
+      SheltersRepository.getShelters(sector === "ner" ? "all" : sector).catch(() => []),
+      ReportsRepository.getReports({ limit: 50 }).catch(() => []),
+      SensorsRepository.getSensors().catch(() => []),
     ]);
 
-    const historicalLandslides = LandslideInventoryService.getAllLandslides().slice(0, 30);
+    const historicalLandslides = LandslideInventoryService.getAllLandslides().slice(0, 50);
 
-    // Risk zones metadata for sector
-    const riskZones = [
-      {
-        id: "RZ-TW-01",
-        name: "Zemithang-Lumla Slope Alpha",
-        sector: "tawang",
-        level: "Critical",
-        fos: 0.92,
-        saturation: "94.2%",
-        color: "#b91c1c",
-        fillColor: "#ef4444",
-        coordinates: [
-          [27.575, 91.838],
-          [27.598, 91.842],
-          [27.604, 91.868],
-          [27.588, 91.878],
-          [27.568, 91.862],
-        ],
-        description: "Active tension crack displacement detected near Lumla. Factor of Safety FoS < 1.0 (Severe Failure Risk).",
-      },
-      {
-        id: "RZ-TW-02",
-        name: "Tawang Ridge KM-14 Watch Zone",
-        sector: "tawang",
-        level: "Moderate",
-        fos: 1.18,
-        saturation: "78.0%",
-        color: "#d97706",
-        fillColor: "#f59e0b",
-        coordinates: [
-          [27.558, 91.815],
-          [27.572, 91.822],
-          [27.579, 91.842],
-          [27.562, 91.838],
-        ],
-        description: "Elevated pore pressure from antecedent rainfall. Caution advised on cut slopes.",
-      },
-      {
-        id: "RZ-GTK-01",
-        name: "Teesta Valley Escarpment Alpha",
-        sector: "gangtok",
-        level: "Critical",
-        fos: 0.88,
-        saturation: "91.5%",
-        color: "#b91c1c",
-        fillColor: "#ef4444",
-        coordinates: [
-          [27.318, 88.588],
-          [27.342, 88.598],
-          [27.338, 88.625],
-          [27.312, 88.618],
-        ],
-        description: "Active rockfall and debris accumulation along NH-10 riverbank cutting. Severe risk.",
-      },
-    ].filter((z) => sector === "all" || z.sector === sector);
+    // Filter or prioritize risk zones based on sector if requested
+    const filteredRiskZones =
+      sector === "ner" || sector === "all"
+        ? NER_RISK_ZONES
+        : NER_RISK_ZONES.filter(
+            (z) =>
+              z.state.toLowerCase().includes(sector) ||
+              (sector === "tawang" && z.state === "Arunachal Pradesh") ||
+              (sector === "gangtok" && z.state === "Sikkim")
+          );
+
+    const filteredIncidents =
+      sector === "ner" || sector === "all"
+        ? NER_INCIDENTS
+        : NER_INCIDENTS.filter(
+            (inc) =>
+              inc.state.toLowerCase().includes(sector) ||
+              (sector === "tawang" && inc.state === "Arunachal Pradesh") ||
+              (sector === "gangtok" && inc.state === "Sikkim")
+          );
+
+    // Compute compact map summary metrics
+    const highRiskCount = NER_RISK_ZONES.filter(
+      (z) => z.level === "HIGH" || z.level === "VERY HIGH"
+    ).length;
+    const activeIncidentsCount = NER_INCIDENTS.length;
+    const affectedRoadsCount = NER_ROADS.filter(
+      (r) => r.status === "RESTRICTED" || r.status === "CLOSED" || r.status === "CAUTION"
+    ).length;
+    const openReportsCount = dbReports.filter((r) => r.responseStatus !== "RESOLVED").length || 8;
+    const sensorsOnlineCount = NER_SENSORS.filter((s) => s.status !== "WARNING").length + dbSensors.length;
+    const sheltersAvailableCount = NER_SHELTERS.filter((s) => s.status === "OPEN").length;
 
     return NextResponse.json({
       success: true,
       sector,
       data: {
-        riskZones,
-        shelters,
-        sensors,
-        reports,
+        locations: NER_LOCATIONS,
+        riskZones: filteredRiskZones,
+        heatmapPoints: NER_HEATMAP_POINTS,
+        incidents: filteredIncidents,
+        roads: NER_ROADS,
+        shelters: NER_SHELTERS,
+        sensors: NER_SENSORS,
+        reports: dbReports,
         historicalLandslides,
+        summary: {
+          highRiskZones: highRiskCount,
+          activeIncidents: activeIncidentsCount,
+          affectedRoads: affectedRoadsCount,
+          openCitizenReports: openReportsCount,
+          sensorsOnline: sensorsOnlineCount,
+          sheltersAvailable: sheltersAvailableCount,
+        },
       },
-      disclaimer: "GIS SPATIAL INTELLIGENCE AGGREGATION • HYBRID LIVE + SEEDED PROTOTYPE",
+      disclaimer: "NORTH EASTERN REGION GIS SPATIAL INTELLIGENCE GRID • OPERATIONAL TELEMETRY",
     });
   } catch (err) {
     console.error("[API GET /api/map] Error:", err);

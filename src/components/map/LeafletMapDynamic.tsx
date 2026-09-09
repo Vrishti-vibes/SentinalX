@@ -2,16 +2,18 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import type { GisMapFeature, LayerFilter, LayerVisibility } from "@/types/gis-map";
+import type { GisMapFeature, LayerFilter, LayerVisibility, NerLocationItem } from "@/types/gis-map";
 import { RiskEngineResult } from "@/types/risk";
 import { IncidentReportRecord, SensorReadingRecord } from "@/types/database";
 
-interface LeafletMapDynamicProps {
-  selectedLocation: "tawang" | "gangtok";
+export interface LeafletMapDynamicProps {
+  selectedLocation: string;
+  selectedLocationData?: NerLocationItem | null;
   activeFilter?: LayerFilter;
   layerVisibility?: LayerVisibility;
   onSelectFeature: (feature: GisMapFeature) => void;
-  riskResult: RiskEngineResult | null;
+  onSelectLocation?: (locationId: string) => void;
+  riskResult?: RiskEngineResult | null;
   reports?: IncidentReportRecord[];
   sensors?: SensorReadingRecord[];
 }
@@ -19,9 +21,16 @@ interface LeafletMapDynamicProps {
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-[#edf2f7] flex flex-col items-center justify-center text-slate-400 gap-2">
-      <div className="w-6 h-6 border-2 border-slate-300 border-t-rose-600 rounded-full animate-spin" />
-      <span className="text-xs font-mono font-medium">Initializing Interactive GIS Map...</span>
+    <div className="w-full h-full min-h-[420px] bg-slate-900 flex flex-col items-center justify-center text-slate-300 gap-3">
+      <div className="w-8 h-8 border-3 border-slate-700 border-t-emerald-400 rounded-full animate-spin" />
+      <div className="text-center space-y-1">
+        <span className="text-xs font-mono font-bold tracking-wider text-emerald-400 uppercase block">
+          INITIALIZING NER GIS ENGINE
+        </span>
+        <span className="text-[11px] text-slate-400 font-sans">
+          Loading 8-state topographic and telemetry layers...
+        </span>
+      </div>
     </div>
   ),
 });
@@ -29,3 +38,4 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
 export default function LeafletMapDynamic(props: LeafletMapDynamicProps) {
   return <LeafletMap {...props} />;
 }
+
