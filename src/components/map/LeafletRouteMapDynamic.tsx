@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import dynamic from "next/dynamic";
@@ -10,6 +10,9 @@ interface LeafletRouteMapDynamicProps {
   originLon?: number;
   destLat?: number;
   destLon?: number;
+  originName?: string;
+  destName?: string;
+  hazardName?: string;
 }
 
 const LeafletRouteMap = dynamic(() => import("./LeafletRouteMap"), {

@@ -199,12 +199,15 @@ model IncidentReport {
   verificationStatus       String   @default("PENDING_VERIFICATION") @map("verification_status") // PENDING_VERIFICATION, VERIFIED, REJECTED
   responseStatus           String   @default("SUBMITTED") @map("response_status") // SUBMITTED, VERIFIED, AUTHORITIES_NOTIFIED, RESPONSE_ASSIGNED, RESOLVED
   assignedTeam             String?  @map("assigned_team")
+  assignedTeamId           String?  @map("assigned_team_id")
   estimatedResponseMinutes Int?     @default(20) @map("estimated_response_minutes")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
 
   user                     User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  team                     ResponseTeam?          @relation(fields: [assignedTeamId], references: [id], onDelete: SetNull)
   statusHistory            ReportStatusHistory[]
+  assignments              ReportAssignment[]
 
   @@index([reportId])
   @@index([responseStatus])
@@ -223,6 +226,39 @@ model ReportStatusHistory {
 
   @@index([reportId])
   @@map("report_status_history")
+}
+
+model ResponseTeam {
+  id                       String   @id @default(uuid())
+  name                     String   @unique
+  sector                   String
+  status                   String   @default("STANDBY") // STANDBY, DISPATCHED, ON_SITE, OFF_DUTY
+  contactNumber            String?  @map("contact_number")
+  defaultResponseMinutes   Int      @default(15) @map("default_response_minutes")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+
+  incidentReports          IncidentReport[]
+  assignments              ReportAssignment[]
+
+  @@map("response_teams")
+}
+
+model ReportAssignment {
+  id                       String   @id @default(uuid())
+  reportId                 String   @map("report_id")
+  teamId                   String   @map("team_id")
+  assignedBy               String?  @map("assigned_by")
+  notes                    String?
+  estimatedResponseMinutes Int?     @map("estimated_response_minutes")
+  assignedAt               DateTime @default(now()) @map("assigned_at")
+
+  report                   IncidentReport @relation(fields: [reportId], references: [reportId], onDelete: Cascade)
+  team                     ResponseTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([teamId])
+  @@map("report_assignments")
 }
 
 model Alert {

@@ -37,6 +37,7 @@ import { useDeviceMode } from "@/components/layout/DeviceModeContext";
 import { RiskAlertModal } from "@/components/alert/RiskAlertModal";
 import { NotificationDrawer } from "@/components/alert/NotificationDrawer";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { getResolvedLocation } from "@/lib/utils/location-store";
 export default function MonitorHomeScreen() {
   const { isMobile } = useDeviceMode();
   const {
@@ -89,11 +90,17 @@ export default function MonitorHomeScreen() {
     setIsAlertModalOpen(true);
   };
 
-  // Derive score and level from API result
-  const riskScore = riskResult ? riskResult.score : 43.2;
-  const riskLevel = riskResult ? riskResult.level : "MODERATE";
-  const locationName = riskResult?.location?.name ?? (selectedLocation === "gangtok" ? "Gangtok / Sevoke Corridor" : "Tawang Sector");
-  const inputCoveragePercent = riskResult ? Math.round(riskResult.inputCoverageRatio * 100) : 83;
+  // Derive score and level from API result or unified NER location dataset
+  const resolvedLoc = getResolvedLocation(selectedLocation);
+  const riskScore = riskResult ? riskResult.score : resolvedLoc.riskScore;
+  const rawLevel = riskResult
+    ? riskResult.level
+    : resolvedLoc.riskLevel.toUpperCase() === "VERY HIGH"
+    ? "HIGH"
+    : resolvedLoc.riskLevel.toUpperCase();
+  const riskLevel = rawLevel as "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
+  const locationName = riskResult?.location?.name ?? `${resolvedLoc.name} (${resolvedLoc.state})`;
+  const inputCoveragePercent = riskResult ? Math.round(riskResult.inputCoverageRatio * 100) : 88;
 
   return (
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
@@ -172,36 +179,41 @@ export default function MonitorHomeScreen() {
               <span>Trigger Test Alert</span>
             </button>
 
-            <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setSelectedLocation("tawang")}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                  selectedLocation === "tawang"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Tawang
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedLocation("gangtok")}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                  selectedLocation === "gangtok"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Gangtok / Sevoke
-              </button>
+            <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl max-w-full overflow-x-auto scrollbar-none">
+              {[
+                { id: "tawang", label: "Tawang" },
+                { id: "gangtok", label: "Gangtok" },
+                { id: "guwahati", label: "Guwahati" },
+                { id: "shillong", label: "Shillong" },
+                { id: "cherrapunji", label: "Cherrapunji" },
+                { id: "haflong", label: "Haflong" },
+                { id: "kohima", label: "Kohima" },
+                { id: "imphal", label: "Imphal" },
+                { id: "aizawl", label: "Aizawl" },
+                { id: "agartala", label: "Agartala" },
+                { id: "itanagar", label: "Itanagar" },
+                { id: "ner", label: "NER All" },
+              ].map((loc) => (
+                <button
+                  key={loc.id}
+                  type="button"
+                  onClick={() => setSelectedLocation(loc.id)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    selectedLocation.toLowerCase() === loc.id
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {loc.label}
+                </button>
+              ))}
               <button
                 type="button"
                 onClick={refresh}
                 disabled={isRefreshing}
                 aria-label="Refresh risk intelligence data"
                 title="Refresh intelligence"
-                className="w-7 h-7 rounded-lg bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition-all disabled:opacity-50 cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition-all shrink-0 disabled:opacity-50 cursor-pointer"
               >
                 <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
               </button>
@@ -318,7 +330,7 @@ export default function MonitorHomeScreen() {
                   <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex gap-0.5 p-0.5">
                     <div
                       className={`h-full w-1/4 rounded-sm transition-all ${
-                        riskLevel === "SAFE" ? "bg-emerald-500 ring-2 ring-emerald-600" : "bg-emerald-300/70"
+                        riskLevel === "LOW" ? "bg-emerald-500 ring-2 ring-emerald-600" : "bg-emerald-300/70"
                       }`}
                     />
                     <div
@@ -338,7 +350,7 @@ export default function MonitorHomeScreen() {
                     />
                   </div>
                   <div className="flex justify-between text-[10px] font-bold text-slate-500 pt-0.5">
-                    <span className={riskLevel === "SAFE" ? "text-emerald-700 font-extrabold" : ""}>Safe (0-25)</span>
+                    <span className={riskLevel === "LOW" ? "text-emerald-700 font-extrabold" : ""}>Low (0-25)</span>
                     <span className={riskLevel === "MODERATE" ? "text-amber-700 font-extrabold" : ""}>Moderate (26-50)</span>
                     <span className={riskLevel === "HIGH" ? "text-orange-700 font-extrabold" : ""}>High (51-75)</span>
                     <span className={riskLevel === "CRITICAL" ? "text-rose-700 font-extrabold" : ""}>Critical (76-100)</span>

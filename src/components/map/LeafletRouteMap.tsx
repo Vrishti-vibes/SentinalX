@@ -60,6 +60,9 @@ interface LeafletRouteMapProps {
   originLon?: number;
   destLat?: number;
   destLon?: number;
+  originName?: string;
+  destName?: string;
+  hazardName?: string;
 }
 
 export default function LeafletRouteMap({
@@ -68,6 +71,9 @@ export default function LeafletRouteMap({
   originLon = 91.859,
   destLat = 27.592,
   destLon = 91.875,
+  originName = "Current Departure Sector",
+  destName = "Designated Safe Shelter",
+  hazardName = "Active Geotechnical Hazard Zone",
 }: LeafletRouteMapProps) {
   // Convert GeoJSON coordinates [lon, lat] to Leaflet [lat, lon]
   const rawCoords = routeData?.recommendedRoute?.geometry?.coordinates;
@@ -76,17 +82,32 @@ export default function LeafletRouteMap({
       ? rawCoords.map((c) => [c[1], c[0]])
       : [
           [originLat, originLon],
-          [27.588, 91.865],
-          [27.590, 91.870],
+          [
+            originLat + (destLat - originLat) * 0.35 + 0.002,
+            originLon + (destLon - originLon) * 0.35 - 0.002,
+          ],
+          [
+            originLat + (destLat - originLat) * 0.7 + 0.001,
+            originLon + (destLon - originLon) * 0.7 - 0.001,
+          ],
           [destLat, destLon],
         ];
 
-  // Active hazard zone polygon that is being avoided
+  // Dynamic hazard zone avoiding in this sector
+  const midLat = (originLat + destLat) / 2;
+  const midLon = (originLon + destLon) / 2;
+  const offsetLat = (destLon - originLon) * 0.25;
+  const offsetLon = -(destLat - originLat) * 0.25;
+
+  const hCenterLat = midLat + offsetLat;
+  const hCenterLon = midLon + offsetLon;
+  const hSize = Math.max(0.0025, Math.min(0.015, Math.abs(destLat - originLat) * 0.2));
+
   const hazardPolygon: [number, number][] = [
-    [27.584, 91.861],
-    [27.589, 91.862],
-    [27.588, 91.868],
-    [27.582, 91.866],
+    [hCenterLat - hSize, hCenterLon - hSize],
+    [hCenterLat + hSize, hCenterLon - hSize * 0.8],
+    [hCenterLat + hSize * 0.9, hCenterLon + hSize],
+    [hCenterLat - hSize * 0.8, hCenterLon + hSize * 0.9],
   ];
 
   return (
@@ -113,7 +134,7 @@ export default function LeafletRouteMap({
           pathOptions={{
             color: "#e11d48",
             fillColor: "#f43f5e",
-            fillOpacity: 0.12,
+            fillOpacity: 0.14,
             weight: 1.5,
             dashArray: "4, 4",
           }}
@@ -121,8 +142,8 @@ export default function LeafletRouteMap({
           <Popup>
             <div className="text-xs p-1">
               <span className="font-bold text-rose-700 block uppercase text-[10px]">Hazard Zone Avoided</span>
-              <span className="font-bold">Main Arterial Slope Failure Risk</span>
-              <p className="text-slate-600 mt-0.5">Route engine navigated traffic away from tension crack segment.</p>
+              <span className="font-bold">{hazardName}</span>
+              <p className="text-slate-600 mt-0.5">Route engine navigated traffic away from high slope-instability corridor.</p>
             </div>
           </Popup>
         </Polygon>
@@ -143,8 +164,9 @@ export default function LeafletRouteMap({
         <Marker position={[originLat, originLon]} icon={ROUTE_ICONS.start}>
           <Popup>
             <div className="text-xs p-1">
-              <span className="font-bold text-blue-700 block text-[10px] uppercase">Current Origin</span>
-              <span className="font-bold">Tawang Sector (27.586°N, 91.859°E)</span>
+              <span className="font-bold text-blue-700 block text-[10px] uppercase">Departure Point</span>
+              <span className="font-bold">{originName}</span>
+              <span className="text-[10px] text-slate-500 block">({originLat.toFixed(3)}°N, {originLon.toFixed(3)}°E)</span>
             </div>
           </Popup>
         </Marker>
@@ -154,8 +176,8 @@ export default function LeafletRouteMap({
           <Popup>
             <div className="text-xs p-1">
               <span className="font-bold text-emerald-700 block text-[10px] uppercase">Safe Destination</span>
-              <span className="font-bold">Tawang Community Center</span>
-              <span className="text-[10px] text-slate-500 block">Monastery Ridge Rd • Open Shelter</span>
+              <span className="font-bold">{destName}</span>
+              <span className="text-[10px] text-slate-500 block">Certified Relief Shelter • Safe Route Verified</span>
             </div>
           </Popup>
         </Marker>

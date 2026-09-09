@@ -73,11 +73,16 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     const payload = body as UpdateReportStatusPayload;
 
     const validResponseStatuses: ResponseStatus[] = [
-      "SUBMITTED",
+      "NEW",
+      "UNDER_REVIEW",
       "VERIFIED",
+      "DISPATCHED",
+      "ON_SITE",
+      "RESOLVED",
+      "REJECTED",
+      "SUBMITTED",
       "AUTHORITIES_NOTIFIED",
       "RESPONSE_ASSIGNED",
-      "RESOLVED",
     ];
     if (payload.responseStatus && !validResponseStatuses.includes(payload.responseStatus)) {
       return NextResponse.json(
@@ -104,14 +109,23 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       );
     }
 
-    const { report, history } = await ReportsRepository.updateReportStatus(reportId, payload);
+    const result = await ReportsRepository.updateReportStatus(reportId, payload);
 
-    if (!report) {
+    if (result.error) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 400 }
+      );
+    }
+
+    if (!result.report) {
       return NextResponse.json(
         { success: false, error: `Report '${reportId}' not found.` },
         { status: 404 }
       );
     }
+
+    const { report, history } = result;
 
     return NextResponse.json({
       success: true,

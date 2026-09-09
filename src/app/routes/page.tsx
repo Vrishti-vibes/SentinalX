@@ -18,20 +18,143 @@ import {
 import { RouteResponse, RouteCandidate } from "@/types/routing";
 import LeafletRouteMapDynamic from "@/components/map/LeafletRouteMapDynamic";
 import { useDeviceMode } from "@/components/layout/DeviceModeContext";
+import {
+  getStoredLocationId,
+  setStoredLocationId,
+  getResolvedLocation,
+  LOCATION_CHANGE_EVENT,
+} from "@/lib/utils/location-store";
+import { NER_LOCATIONS } from "@/lib/data/ner-gis-data";
+
+const DEFAULT_SHELTERS_BY_LOCATION: Record<
+  string,
+  { name: string; lat: number; lon: number; hazardName: string; hazardDesc: string }
+> = {
+  tawang: {
+    name: "Tawang High-Ground Community Relief Shelter",
+    lat: 27.585,
+    lon: 91.865,
+    hazardName: "Main Arterial Slope Failure Risk",
+    hazardDesc: "Bypassing Lumla-Tawang Tension Crack Zone. Primary corridor active shear displacement.",
+  },
+  gangtok: {
+    name: "Gangtok Indoor Stadium Relief Camp",
+    lat: 27.332,
+    lon: 88.614,
+    hazardName: "NH-10 Ranipool Slope Subsidence",
+    hazardDesc: "Bypassing Teesta Riverbank Scour and KM 24 Debris Flow polygon on NH-10.",
+  },
+  guwahati: {
+    name: "Sarusajai Sports Complex Relief Haven",
+    lat: 26.115,
+    lon: 91.758,
+    hazardName: "Southern Residual Ridge Cut Erosion",
+    hazardDesc: "Bypassing southern hill-slope washout corridor. Direct traffic along expressway link.",
+  },
+  shillong: {
+    name: "Shillong Central Youth Center",
+    lat: 25.582,
+    lon: 91.885,
+    hazardName: "Upper Shillong Escarpment Slumping",
+    hazardDesc: "Bypassing Shillong-Cherrapunji escarpment cut failure via high-ground Mawkhar ridge.",
+  },
+  cherrapunji: {
+    name: "Sohra Civil Sub-Division Relief Hall",
+    lat: 25.295,
+    lon: 91.735,
+    hazardName: "Sohra Rim Deep Gully Collapse",
+    hazardDesc: "Bypassing active escarpment gorge headwall tension crack via upper plateau bypass.",
+  },
+  haflong: {
+    name: "Haflong District Indoor Stadium",
+    lat: 25.172,
+    lon: 93.025,
+    hazardName: "Barail Mudslide Track Subsidence",
+    hazardDesc: "Bypassing railway culvert mudflow spillage along lower Jatinga valley highway.",
+  },
+  kohima: {
+    name: "Kohima Local Ground Community Pavilion",
+    lat: 25.670,
+    lon: 94.112,
+    hazardName: "Zubza Disang Shale Sinking Zone",
+    hazardDesc: "Bypassing NH-29 carriage-way subsidence sinking corridor via upper ridge link.",
+  },
+  imphal: {
+    name: "Khuman Lampak Relief Complex",
+    lat: 24.821,
+    lon: 93.945,
+    hazardName: "NH-37 Mountain Pass Boulder Debris",
+    hazardDesc: "Bypassing Noney hillside boulder release area along arterial highway corridor.",
+  },
+  aizawl: {
+    name: "Aizawl High Ground Parish Hall",
+    lat: 23.755,
+    lon: 92.730,
+    hazardName: "Hunthar Rotational Landslide Slip Circle",
+    hazardDesc: "Bypassing Hunthar active deep-seated creep zone via Durtlang mountain crest.",
+  },
+  agartala: {
+    name: "Swami Vivekananda Relief Hub",
+    lat: 23.836,
+    lon: 91.282,
+    hazardName: "Baramura Ridge Gully Erosion",
+    hazardDesc: "Bypassing eastern road-cutting rain wash-outs along NH-08 corridor.",
+  },
+  itanagar: {
+    name: "Indira Gandhi Park Relief Pavilion",
+    lat: 27.098,
+    lon: 93.619,
+    hazardName: "NH-415 Road Widening Debris Slide",
+    hazardDesc: "Bypassing foothills unstable cut slope via Capital Complex arterial avenue.",
+  },
+  ner: {
+    name: "Guwahati Regional Disaster Logistics Hub",
+    lat: 26.143,
+    lon: 91.789,
+    hazardName: "Interstate Strategic Corridor Risk",
+    hazardDesc: "Regional safe evacuation grid connecting central staging facilities.",
+  },
+};
 
 function SafeRouteContent() {
   const { isMobile, isTablet } = useDeviceMode();
   const isSimulatedMobileOrTablet = isMobile || isTablet;
   const searchParams = useSearchParams();
 
-  // Read destination coordinates from query if routed from Shelters page
+  // Location synchronization from query or shared store
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(() => {
+    return searchParams.get("loc") || getStoredLocationId("tawang");
+  });
+
+  useEffect(() => {
+    const handleLocationChange = (e: any) => {
+      if (e.detail && e.detail !== selectedLocationId) {
+        setSelectedLocationId(e.detail);
+      }
+    };
+    window.addEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+    return () => window.removeEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+  }, [selectedLocationId]);
+
+  const resolvedOrigin = getResolvedLocation(selectedLocationId);
+  const defaultShelter =
+    DEFAULT_SHELTERS_BY_LOCATION[selectedLocationId.toLowerCase()] ||
+    DEFAULT_SHELTERS_BY_LOCATION.tawang;
+
+  // Read destination coordinates from query if routed from Shelters page or fall back to sector shelter
   const destLatParam = searchParams.get("destLat");
   const destLonParam = searchParams.get("destLon");
   const destNameParam = searchParams.get("destName");
 
-  const destLat = destLatParam ? parseFloat(destLatParam) : 27.592;
-  const destLon = destLonParam ? parseFloat(destLonParam) : 91.875;
-  const destName = destNameParam || "Tawang Community Center (Shelter #1)";
+  const originLat = resolvedOrigin.latLng[0];
+  const originLon = resolvedOrigin.latLng[1];
+  const originName = resolvedOrigin.name;
+
+  const destLat = destLatParam ? parseFloat(destLatParam) : defaultShelter.lat;
+  const destLon = destLonParam ? parseFloat(destLonParam) : defaultShelter.lon;
+  const destName = destNameParam || defaultShelter.name;
+  const hazardName = defaultShelter.hazardName;
+  const hazardDesc = defaultShelter.hazardDesc;
 
   const [travelMode, setTravelMode] = useState<"DRIVING" | "WALKING">("DRIVING");
   const [isStarted, setIsStarted] = useState(false);
@@ -45,7 +168,7 @@ function SafeRouteContent() {
       if (typeof window !== "undefined") {
         setIsOnline(navigator.onLine);
         if (!navigator.onLine) {
-          const cachedStr = localStorage.getItem(`sentinalx_cached_route_${mode}`);
+          const cachedStr = localStorage.getItem(`sentinalx_cached_route_${selectedLocationId}_${mode}`);
           if (cachedStr) {
             setRouteData(JSON.parse(cachedStr));
             setIsLoading(false);
@@ -55,14 +178,19 @@ function SafeRouteContent() {
       }
 
       const res = await fetch(
-        `/api/routes?fromLat=27.586&fromLon=91.859&toLat=${destLat}&toLon=${destLon}&mode=${mode.toLowerCase()}`
+        `/api/routes?fromLat=${originLat}&fromLon=${originLon}&toLat=${destLat}&toLon=${destLon}&originName=${encodeURIComponent(
+          originName
+        )}&destName=${encodeURIComponent(destName)}&mode=${mode.toLowerCase()}`
       );
       if (res.ok) {
         const json = await res.json();
         if (json.data) {
           setRouteData(json.data);
           if (typeof window !== "undefined") {
-            localStorage.setItem(`sentinalx_cached_route_${mode}`, JSON.stringify(json.data));
+            localStorage.setItem(
+              `sentinalx_cached_route_${selectedLocationId}_${mode}`,
+              JSON.stringify(json.data)
+            );
           }
         }
       }
@@ -90,7 +218,7 @@ function SafeRouteContent() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [destLat, destLon, travelMode]);
+  }, [originLat, originLon, destLat, destLon, travelMode, selectedLocationId]);
 
   const recommended = routeData?.recommendedRoute;
   const distanceStr = recommended ? `${recommended.distanceKm.toFixed(1)} km` : "2.8 km";
@@ -135,6 +263,40 @@ function SafeRouteContent() {
 
       {/* Main Content Area */}
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl w-full mx-auto">
+        {/* Sector Quick Switcher */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+          {[
+            { id: "tawang", label: "Tawang (AR)" },
+            { id: "gangtok", label: "Gangtok (SK)" },
+            { id: "guwahati", label: "Guwahati (AS)" },
+            { id: "shillong", label: "Shillong (ML)" },
+            { id: "cherrapunji", label: "Cherrapunji (ML)" },
+            { id: "haflong", label: "Haflong (AS)" },
+            { id: "kohima", label: "Kohima (NL)" },
+            { id: "imphal", label: "Imphal (MN)" },
+            { id: "aizawl", label: "Aizawl (MZ)" },
+            { id: "agartala", label: "Agartala (TR)" },
+            { id: "itanagar", label: "Itanagar (AR)" },
+            { id: "ner", label: "NER Regional" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setSelectedLocationId(item.id);
+                setStoredLocationId(item.id);
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all text-[11px] ${
+                selectedLocationId.toLowerCase() === item.id
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         {/* 2. Subheader & Mode Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
@@ -153,7 +315,7 @@ function SafeRouteContent() {
               <div className="w-4 h-4 flex items-center justify-center text-blue-600">
                 <Crosshair className="w-3.5 h-3.5" />
               </div>
-              <span>Origin: Tawang Sector (27.586°N, 91.859°E)</span>
+              <span>Origin: {originName} ({originLat.toFixed(3)}°N, {originLon.toFixed(3)}°E)</span>
               <span className="text-[#94a3b8] font-bold mx-1">→</span>
               <div className="w-4 h-4 flex items-center justify-center text-emerald-600">
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -238,7 +400,7 @@ function SafeRouteContent() {
             <p className="text-xs text-slate-600 font-medium leading-relaxed">
               {isBlocked
                 ? "Direct road corridor intersecting high landslide risk polygon. Auto-diverted to safe bypass."
-                : "Route dynamically calculated avoiding active landslide tension crack zone on Main Arterial Rd."}
+                : `Route dynamically calculated avoiding active hazard zone (${hazardName}).`}
             </p>
           </div>
 
@@ -251,10 +413,13 @@ function SafeRouteContent() {
             <div className="relative h-[320px] w-full bg-[#edf2f7] overflow-hidden">
               <LeafletRouteMapDynamic
                 routeData={routeData}
-                originLat={27.586}
-                originLon={91.859}
+                originLat={originLat}
+                originLon={originLon}
                 destLat={destLat}
                 destLon={destLon}
+                originName={originName}
+                destName={destName}
+                hazardName={hazardName}
               />
             </div>
           </div>
@@ -292,7 +457,7 @@ function SafeRouteContent() {
               </span>
             </div>
             <p className="text-xs text-rose-950 font-semibold leading-relaxed">
-              Bypassing Zemithang-Lumla Slope Alpha (FoS 0.92, Saturation 94.2%). Primary corridor active shear displacement.
+              {hazardDesc}
             </p>
           </div>
 
@@ -330,7 +495,7 @@ function SafeRouteContent() {
                 </span>
               </div>
               <span className="text-slate-500 font-mono text-[10px]">
-                Avoids: Zemithang-Lumla Hazard Polygon
+                Avoids: {hazardName}
               </span>
             </div>
 
@@ -338,10 +503,13 @@ function SafeRouteContent() {
             <div className="relative h-[500px] w-full bg-[#edf2f7] overflow-hidden">
               <LeafletRouteMapDynamic
                 routeData={routeData}
-                originLat={27.586}
-                originLon={91.859}
+                originLat={originLat}
+                originLon={originLon}
                 destLat={destLat}
                 destLon={destLon}
+                originName={originName}
+                destName={destName}
+                hazardName={hazardName}
               />
             </div>
           </div>
@@ -383,7 +551,7 @@ function SafeRouteContent() {
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 {isBlocked
                   ? "Direct road corridor intersecting high landslide risk polygon. Auto-diverted to safe bypass."
-                  : "Route dynamically calculated avoiding active landslide tension crack zone on Main Arterial Rd."}
+                  : `Route dynamically calculated avoiding active hazard zone (${hazardName}).`}
               </p>
 
               {/* Metric Badges: Distance and ETA */}
@@ -416,7 +584,7 @@ function SafeRouteContent() {
                   </span>
                 </div>
                 <p className="text-rose-950 font-semibold leading-relaxed text-[11px]">
-                  Bypassing Zemithang-Lumla Slope Alpha (FoS 0.92, Saturation 94.2%). Primary corridor active shear displacement.
+                  {hazardDesc}
                 </p>
               </div>
 

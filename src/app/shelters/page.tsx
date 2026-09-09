@@ -19,6 +19,13 @@ import {
 import { ShelterRecord } from "@/types/shelter";
 import LeafletShelterMapDynamic from "@/components/map/LeafletShelterMapDynamic";
 import { useDeviceMode } from "@/components/layout/DeviceModeContext";
+import {
+  getStoredLocationId,
+  setStoredLocationId,
+  getResolvedLocation,
+  LOCATION_CHANGE_EVENT,
+} from "@/lib/utils/location-store";
+import { NER_LOCATIONS } from "@/lib/data/ner-gis-data";
 
 // Operational shelter data for Tawang Sector
 const TAWANG_SHELTERS: ShelterRecord[] = [
@@ -163,25 +170,40 @@ const GANGTOK_SHELTERS: ShelterRecord[] = [
 
 export default function SheltersScreen() {
   const { isMobile } = useDeviceMode();
-  const [selectedLocation, setSelectedLocation] = useState<string>("tawang");
+  const [selectedLocation, setSelectedLocation] = useState<string>(() => getStoredLocationId("tawang"));
   const [shelters, setShelters] = useState<ShelterRecord[]>(TAWANG_SHELTERS);
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const handleLocationChange = (e: any) => {
+      if (e.detail && e.detail !== selectedLocation) {
+        setSelectedLocation(e.detail);
+      }
+    };
+    window.addEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+    return () => window.removeEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+  }, [selectedLocation]);
+
+  const resolvedLocation = getResolvedLocation(selectedLocation);
+
+  const handleSelectLocation = (locId: string) => {
+    setSelectedLocation(locId);
+    setStoredLocationId(locId);
+  };
+
   const fetchShelters = async (sector: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/shelters?sector=${sector}`);
+      const res = await fetch(`/api/shelters?sector=${encodeURIComponent(sector)}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           setShelters(json.data);
-        } else {
-          setShelters(sector === "gangtok" ? GANGTOK_SHELTERS : TAWANG_SHELTERS);
+          return;
         }
-      } else {
-        setShelters(sector === "gangtok" ? GANGTOK_SHELTERS : TAWANG_SHELTERS);
       }
+      setShelters(sector === "gangtok" ? GANGTOK_SHELTERS : TAWANG_SHELTERS);
     } catch {
       setShelters(sector === "gangtok" ? GANGTOK_SHELTERS : TAWANG_SHELTERS);
     } finally {
@@ -221,7 +243,38 @@ export default function SheltersScreen() {
 
       {/* Main Content Area */}
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl w-full mx-auto">
-        {/* 2. Page Subheader + Location Switcher */}
+        {/* Sector Switcher Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+          {[
+            { id: "tawang", label: "Tawang (AR)" },
+            { id: "gangtok", label: "Gangtok (SK)" },
+            { id: "guwahati", label: "Guwahati (AS)" },
+            { id: "shillong", label: "Shillong (ML)" },
+            { id: "cherrapunji", label: "Cherrapunji (ML)" },
+            { id: "haflong", label: "Haflong (AS)" },
+            { id: "kohima", label: "Kohima (NL)" },
+            { id: "imphal", label: "Imphal (MN)" },
+            { id: "aizawl", label: "Aizawl (MZ)" },
+            { id: "agartala", label: "Agartala (TR)" },
+            { id: "itanagar", label: "Itanagar (AR)" },
+            { id: "ner", label: "NER All" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleSelectLocation(item.id)}
+              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all text-[11px] ${
+                selectedLocation.toLowerCase() === item.id
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 2. Page Subheader */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
@@ -234,47 +287,19 @@ export default function SheltersScreen() {
             <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-600 font-semibold">
               <MapPin className="w-3.5 h-3.5 text-slate-500" />
               <span>
-                {selectedLocation === "gangtok"
-                  ? "Sikkim / NH-10 Corridor, Gangtok Sub-Division"
-                  : "Tawang Sector, Arunachal Pradesh"}
+                {resolvedLocation.name}, {resolvedLocation.state}
               </span>
             </div>
           </div>
-
-          <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-200/70 p-1 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setSelectedLocation("tawang")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                selectedLocation === "tawang"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Tawang Sector
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedLocation("gangtok")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                selectedLocation === "gangtok"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Sikkim / NH-10
-            </button>
-          </div>
         </div>
 
-        {/* 3. Real Interactive GIS Shelter Map (CARTO Voyager Basemap) */}
+        {/* 3. Real Interactive GIS Shelter Map */}
         <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm flex flex-col">
           <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 font-bold text-slate-800">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>
-                Interactive Relief Geography •{" "}
-                {selectedLocation === "gangtok" ? "Sikkim Corridor" : "Tawang Sector"}
+                Interactive Relief Geography • {resolvedLocation.name}
               </span>
             </div>
             <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">
@@ -284,7 +309,12 @@ export default function SheltersScreen() {
 
           {/* Map Canvas */}
           <div className="relative h-[320px] sm:h-[400px] lg:h-[460px] w-full bg-[#edf2f7] overflow-hidden">
-            <LeafletShelterMapDynamic onSelectShelter={setSelectedShelterId} />
+            <LeafletShelterMapDynamic
+              shelters={shelters}
+              center={resolvedLocation.latLng}
+              sectorName={resolvedLocation.name}
+              onSelectShelter={setSelectedShelterId}
+            />
           </div>
         </div>
 
@@ -386,7 +416,9 @@ export default function SheltersScreen() {
                   </button>
 
                   <Link
-                    href={`/routes?destLat=${shelter.latitude}&destLon=${shelter.longitude}&destName=${encodeURIComponent(shelter.name)}&shelterId=${shelter.id}`}
+                    href={`/routes?destLat=${shelter.latitude}&destLon=${shelter.longitude}&destName=${encodeURIComponent(
+                      shelter.name
+                    )}&shelterId=${shelter.id}&loc=${selectedLocation}`}
                     className="block w-full"
                   >
                     <button

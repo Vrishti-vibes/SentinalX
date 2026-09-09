@@ -31,6 +31,11 @@ import {
 } from "@/lib/data/ner-gis-data";
 import { useDeviceMode } from "@/components/layout/DeviceModeContext";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import {
+  getStoredLocationId,
+  setStoredLocationId,
+  LOCATION_CHANGE_EVENT,
+} from "@/lib/utils/location-store";
 
 interface LayerToggleItem {
   key: keyof LayerVisibility;
@@ -62,13 +67,31 @@ export default function LiveNerGisMapScreen() {
 
   const isMobile = isContextMobile || isScreenMobile;
 
-  // Default is 'ner' Regional Overview across 8 states
-  const [selectedLocationId, setSelectedLocationId] = useState<string>("ner");
+  // Default is stored location or 'ner' Regional Overview across 8 states
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(() => getStoredLocationId("ner"));
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(DEFAULT_LAYER_VISIBILITY);
   const [selectedFeature, setSelectedFeature] = useState<GisMapFeature | null>(null);
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(true);
+
+  // Sync with global location store on mount and external updates
+  useEffect(() => {
+    const stored = getStoredLocationId("ner");
+    if (stored && stored !== selectedLocationId) {
+      setSelectedLocationId(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleLocationChange = (e: any) => {
+      if (e.detail && e.detail !== selectedLocationId) {
+        setSelectedLocationId(e.detail);
+      }
+    };
+    window.addEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+    return () => window.removeEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+  }, [selectedLocationId]);
 
   // Live Map API Telemetry States
   const [mapApiData, setMapApiData] = useState<any>(null);
@@ -149,6 +172,7 @@ export default function LiveNerGisMapScreen() {
 
   // Handle selecting a location from search or dropdown
   const handleSelectLocation = (loc: NerLocationItem) => {
+    setStoredLocationId(loc.id);
     startTransition(() => {
       setSelectedLocationId(loc.id);
       setSelectedFeature(null);
@@ -656,7 +680,7 @@ export default function LiveNerGisMapScreen() {
             </div>
 
             {/* Interactive Leaflet Map Container */}
-            <div className={`relative ${isMobile ? "h-[440px]" : "h-[580px] lg:h-[640px]"} w-full bg-slate-900 overflow-hidden`}>
+            <div className={`relative ${isMobile ? "h-[440px]" : "h-[580px] lg:h-[640px]"} w-full bg-slate-100 overflow-hidden`}>
               <LeafletMapDynamic
                 selectedLocation={selectedLocationId}
                 selectedLocationData={currentLocationData}

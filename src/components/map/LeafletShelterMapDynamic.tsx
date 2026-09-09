@@ -13,8 +13,13 @@ const LeafletShelterMap = dynamic(() => import("./LeafletShelterMap"), {
   ),
 });
 
+import { ShelterRecord } from "@/types/shelter";
+
 interface LeafletShelterMapDynamicProps {
   onSelectShelter?: (shelterId: string) => void;
+  shelters?: ShelterRecord[];
+  center?: [number, number];
+  sectorName?: string;
 }
 
 export default function LeafletShelterMapDynamic(props: LeafletShelterMapDynamicProps) {

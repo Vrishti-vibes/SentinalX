@@ -5,7 +5,7 @@ export type ShelterIconType = "community" | "camp" | "district";
 export interface ShelterRecord {
   id: string;
   name: string;
-  sector: "tawang" | "gangtok" | "all";
+  sector: string;
   distance: string;
   distanceKm: number;
   capacityPercent: number;

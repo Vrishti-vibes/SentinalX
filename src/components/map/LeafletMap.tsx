@@ -85,26 +85,29 @@ export type BaseMapType = "streets" | "satellite" | "terrain";
 
 export const BASEMAP_CONFIGS: Record<
   BaseMapType,
-  { url: string; attribution: string; maxZoom: number; label: string; provider: string }
+  { url: string; attribution: string; maxZoom: number; maxNativeZoom: number; label: string; provider: string }
 > = {
   streets: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
     maxZoom: 19,
+    maxNativeZoom: 19,
     label: "Street Map",
     provider: "OpenStreetMap Public Tiles",
   },
   satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
-    maxZoom: 19,
+    maxZoom: 18,
+    maxNativeZoom: 18,
     label: "Satellite Imagery",
     provider: "Esri World Imagery (High Resolution Aerial)",
   },
   terrain: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
     attribution: "Tiles &copy; Esri &mdash; Source: USGS, FAO, NPS, NRCAN, GeoBase",
-    maxZoom: 19,
+    maxZoom: 18,
+    maxNativeZoom: 18,
     label: "Topographic Terrain",
     provider: "Esri World Topographic Map",
   },
@@ -164,18 +167,48 @@ export default function LeafletMap({
   reports = [],
   sensors = [],
 }: LeafletMapProps) {
-  const { isMobile } = useDeviceMode();
+  const { isMobile: isContextMobile } = useDeviceMode();
+  const [isScreenMobile, setIsScreenMobile] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [baseMap, setBaseMap] = useState<BaseMapType>("streets");
   const [isLayersOpen, setIsLayersOpen] = useState(false);
   const [isLegendOpen, setIsLegendOpen] = useState(true);
 
-  // Internal layer visibility state synced with props
-  const [layers, setLayers] = useState<LayerVisibility>(layerVisibility || DEFAULT_LAYER_VISIBILITY);
+  // Controlled interaction state: prevents accidental capturing of vertical page scrolling
+  const [isInteractionEnabled, setIsInteractionEnabled] = useState<boolean>(false);
+  const [tileNotice, setTileNotice] = useState<string | null>(null);
+  const tileErrorCountRef = React.useRef<number>(0);
+
+  const handleTileError = () => {
+    if (baseMap === "streets") return;
+    tileErrorCountRef.current += 1;
+    if (tileErrorCountRef.current >= 4) {
+      const failedMap = baseMap;
+      setBaseMap("streets");
+      setTileNotice(
+        `${failedMap === "satellite" ? "Satellite" : "Terrain"} tiles unreachable — gracefully defaulted to Street Map`
+      );
+      tileErrorCountRef.current = 0;
+      setTimeout(() => setTileNotice(null), 5000);
+    }
+  };
+
+  useEffect(() => {
+    tileErrorCountRef.current = 0;
+  }, [baseMap]);
 
   useEffect(() => {
     setIsMounted(true);
+    const handleResize = () => setIsScreenMobile(window.innerWidth < 1024);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const isMobile = isContextMobile || isScreenMobile;
+
+  // Internal layer visibility state synced with props
+  const [layers, setLayers] = useState<LayerVisibility>(layerVisibility || DEFAULT_LAYER_VISIBILITY);
 
   useEffect(() => {
     if (layerVisibility) {
@@ -234,22 +267,72 @@ export default function LeafletMap({
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none">
+    <div
+      className={
+        "relative w-full h-full overflow-hidden select-none " +
+        (!isInteractionEnabled && isMobile ? "touch-pan-y" : "")
+      }
+    >
+      {/* ── Deliberate Map Interaction / Page Scroll Guard Toggle ── */}
+      <div className="absolute top-3 left-14 z-[1000] pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => setIsInteractionEnabled((prev) => !prev)}
+          className={
+            "px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-md border transition-all flex items-center gap-1.5 " +
+            (isInteractionEnabled
+              ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-emerald-500/20"
+              : "bg-white/95 backdrop-blur-md text-slate-700 border-slate-300 hover:bg-slate-50")
+          }
+          title={isInteractionEnabled ? "Click to lock map and scroll page freely" : "Click to enable touch map pan"}
+        >
+          <span className="text-xs">{isInteractionEnabled ? "🔓" : "🔒"}</span>
+          <span className="text-[10.5px] tracking-tight">
+            {isInteractionEnabled ? "Map Pan Active" : isMobile ? "Tap to Pan Map" : "Page Scroll Active"}
+          </span>
+        </button>
+      </div>
+
+      {/* Graceful Tile Provider Fallback Toast */}
+      {tileNotice && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto bg-amber-50 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl shadow-lg text-xs font-bold flex items-center gap-2 animate-bounce">
+          <span>⚠️</span>
+          <span>{tileNotice}</span>
+        </div>
+      )}
+
       <MapContainer
         center={centerCoord}
         zoom={selectedLocation === "ner" ? 7 : 12}
         minZoom={6}
         maxZoom={18}
-        scrollWheelZoom={true}
-        className="w-full h-full z-0"
+        scrollWheelZoom={false}
+        dragging={!isMobile || isInteractionEnabled}
+        touchZoom={isInteractionEnabled}
+        className="w-full h-full z-0 bg-slate-100"
         attributionControl={true}
       >
+        {/* Baseline Street Tiles: Always ensures map is never black or blank */}
         <TileLayer
-          key={baseMap}
-          attribution={currentBasemap.attribution}
-          url={currentBasemap.url}
-          maxZoom={currentBasemap.maxZoom}
+          attribution={BASEMAP_CONFIGS.streets.attribution}
+          url={BASEMAP_CONFIGS.streets.url}
+          maxZoom={BASEMAP_CONFIGS.streets.maxZoom}
+          maxNativeZoom={BASEMAP_CONFIGS.streets.maxNativeZoom}
         />
+
+        {/* Active Satellite or Terrain Layer with MaxNativeZoom and failover handling */}
+        {baseMap !== "streets" && (
+          <TileLayer
+            key={baseMap}
+            attribution={currentBasemap.attribution}
+            url={currentBasemap.url}
+            maxZoom={currentBasemap.maxZoom}
+            maxNativeZoom={currentBasemap.maxNativeZoom}
+            eventHandlers={{
+              tileerror: handleTileError,
+            }}
+          />
+        )}
 
         <MapController
           selectedLocation={selectedLocation}
@@ -337,10 +420,10 @@ export default function LeafletMap({
                       actionHref: "/routes",
                       recommendedAction: isVeryHigh ? "EVACUATE" : isHigh ? "AVOID ZONE" : "STAY ALERT",
                       actionAdvice: isVeryHigh
-                        ? "SEVERE FAILURE IMMINENT: High shear failure probability. Restrict transport corridors and deploy field sensors."
+                        ? "SIMULATED FAILURE SCENARIO: High shear failure probability modeled. Restrict transport corridors and deploy field sensors."
                         : isHigh
-                        ? "HIGH HAZARD: Elevated soil moisture and slope creep. Restrict arterial traffic."
-                        : "MODERATE: Ongoing monitoring under regional rainfall parameters.",
+                        ? "HIGH HAZARD SCENARIO: Elevated soil moisture and slope creep modeled. Restrict arterial traffic."
+                        : "MODERATE SCENARIO: Ongoing monitoring under regional rainfall parameters.",
                     });
                   },
                 }}
@@ -359,7 +442,7 @@ export default function LeafletMap({
                             : "bg-emerald-600"
                         )}
                       >
-                        {zone.level} RISK ZONE
+                        {zone.level} RISK ZONE (SIMULATED)
                       </span>
                       <span className="font-mono text-[9px] text-slate-500 font-bold">{zone.id}</span>
                     </div>
@@ -387,7 +470,7 @@ export default function LeafletMap({
                       >
                         Safe Route →
                       </a>
-                      <span className="text-[9px] text-slate-500 font-mono font-bold">GIS POLYGON</span>
+                      <span className="text-[8.5px] text-slate-500 font-mono font-bold">SIMULATED / DEMO DATASET</span>
                     </div>
                   </div>
                 </Popup>
@@ -492,7 +575,7 @@ export default function LeafletMap({
                 <div className="space-y-2 p-1 min-w-[220px]">
                   <div className="flex items-center justify-between border-b border-rose-100 pb-1">
                     <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-600 text-white tracking-wider">
-                      LANDSLIDE INCIDENT
+                      LANDSLIDE INCIDENT (SIMULATED)
                     </span>
                     <span className="font-mono text-[9px] text-slate-500 font-bold">{inc.id}</span>
                   </div>
@@ -601,7 +684,7 @@ export default function LeafletMap({
                       actionText: "Track Incident",
                       actionHref: '/report/track?id=' + encodeURIComponent(rpt.reportId || rpt.id),
                       recommendedAction: rpt.severity >= 4 ? "AVOID ZONE" : "STAY ALERT",
-                      actionAdvice: 'Citizen field report. Status: ' + rpt.responseStatus + '. Verified: ' + rpt.verificationStatus + '.',
+                      actionAdvice: 'Citizen field report scenario. Status: ' + rpt.responseStatus + '.',
                     });
                   },
                 }}
@@ -610,7 +693,7 @@ export default function LeafletMap({
                   <div className="space-y-1.5 p-0.5 min-w-[190px]">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-1">
                       <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900">
-                        CITIZEN REPORT
+                        CITIZEN REPORT (FIELD PROTOTYPE)
                       </span>
                       <span className="font-mono text-[9px] text-slate-500 font-bold">{rpt.reportId || rpt.id}</span>
                     </div>
@@ -660,7 +743,7 @@ export default function LeafletMap({
                 <div className="space-y-1.5 p-0.5 min-w-[210px]">
                   <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
                     <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                      SAFE SHELTER
+                      SAFE SHELTER (PROTOTYPE DATA)
                     </span>
                     <span className="font-mono text-[9px] text-emerald-700 font-bold">OPEN 24x7</span>
                   </div>
@@ -726,7 +809,7 @@ export default function LeafletMap({
                 <div className="space-y-1.5 p-0.5 min-w-[200px]">
                   <div className="flex items-center justify-between border-b border-blue-100 pb-1">
                     <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                      GEOTECH SENSOR
+                      GEOTECH SENSOR (PROTOTYPE NODE)
                     </span>
                     <span className="font-mono text-[9px] text-slate-500 font-bold">{sen.subCode}</span>
                   </div>
@@ -763,6 +846,46 @@ export default function LeafletMap({
 
       {/* ── Top-Right Floating Basemap & Layers Control ── */}
       <div className="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+        {/* Quick Basemap Switcher Toolbar */}
+        <div className="flex items-center bg-white/95 backdrop-blur-sm border border-slate-300 rounded-xl p-1 shadow-md gap-0.5 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setBaseMap("streets")}
+            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+              baseMap === "streets"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
+            title="Street Map (OSM)"
+          >
+            🗺️ Street
+          </button>
+          <button
+            type="button"
+            onClick={() => setBaseMap("satellite")}
+            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+              baseMap === "satellite"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
+            title="Satellite Imagery (Esri World Imagery)"
+          >
+            🛰️ Satellite
+          </button>
+          <button
+            type="button"
+            onClick={() => setBaseMap("terrain")}
+            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+              baseMap === "terrain"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
+            title="Topographic Terrain (Esri World Topo)"
+          >
+            ⛰️ Terrain
+          </button>
+        </div>
+
         <div className="relative">
           <button
             type="button"
@@ -801,8 +924,8 @@ export default function LeafletMap({
               {/* 1. BASEMAP SWITCHER */}
               <div>
                 <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>BASEMAP PROVIDER</span>
-                  <span className="text-[9px] font-mono text-blue-600 font-bold">REAL TILES</span>
+                  <span>BASEMAP TILES</span>
+                  <span className="text-[9px] font-mono text-blue-600 font-bold">LIVE XYZ TILES</span>
                 </div>
                 <div className="space-y-1">
                   {[

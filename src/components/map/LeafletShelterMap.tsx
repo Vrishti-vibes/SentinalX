@@ -13,6 +13,7 @@ import L from "leaflet";
 import Link from "next/link";
 import { Shield, Navigation, Home, CheckCircle2 } from "lucide-react";
 import "@/styles/leaflet-setup.css";
+import { ShelterRecord } from "@/types/shelter";
 
 function createShelterIcon(label: string) {
   if (typeof window === "undefined") {
@@ -101,55 +102,73 @@ const TAWANG_SHELTERS: ShelterMapData[] = [
   },
 ];
 
-const SHELTER_ROADS: [number, number][][] = [
-  [
-    [27.586, 91.859],
-    [27.588, 91.865],
-    [27.590, 91.870],
-    [27.592, 91.875],
-  ],
-  [
-    [27.586, 91.859],
-    [27.583, 91.853],
-    [27.580, 91.850],
-    [27.579, 91.848],
-  ],
-  [
-    [27.586, 91.859],
-    [27.589, 91.851],
-    [27.593, 91.845],
-    [27.595, 91.840],
-  ],
-];
-
-function ShelterMapBoundsController() {
+function ShelterMapBoundsController({
+  shelters,
+  center,
+}: {
+  shelters: { lat: number; lon: number }[];
+  center: [number, number];
+}) {
   const map = useMap();
   useEffect(() => {
     try {
-      const bounds = L.latLngBounds([
-        [27.578, 91.838],
-        [27.597, 91.878],
-      ]);
-      map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14 });
+      if (shelters && shelters.length > 0) {
+        const points = shelters.map((s) => [s.lat, s.lon] as [number, number]);
+        points.push(center);
+        const bounds = L.latLngBounds(points);
+        map.fitBounds(bounds, { padding: [45, 45], maxZoom: 14, duration: 1.0 });
+      } else {
+        map.flyTo(center, 13, { duration: 1.0 });
+      }
     } catch {
       // ignore
     }
-  }, [map]);
+  }, [shelters, center, map]);
   return null;
 }
 
 interface LeafletShelterMapProps {
   onSelectShelter?: (shelterId: string) => void;
+  shelters?: ShelterRecord[];
+  center?: [number, number];
+  sectorName?: string;
 }
 
-export default function LeafletShelterMap({ onSelectShelter }: LeafletShelterMapProps) {
+export default function LeafletShelterMap({
+  onSelectShelter,
+  shelters,
+  center = [27.587, 91.858],
+  sectorName = "Current Departure Sector",
+}: LeafletShelterMapProps) {
+  const centerCoord: [number, number] = center;
+  const activeShelters: ShelterMapData[] =
+    shelters && shelters.length > 0
+      ? shelters.map((s) => ({
+          id: s.id,
+          name: s.name,
+          lat: s.latitude,
+          lon: s.longitude,
+          distance: s.distance,
+          capacityPercent: s.capacityPercent,
+          status: s.status,
+          type:
+            s.iconType === "community"
+              ? "Community Center"
+              : s.iconType === "district"
+              ? "District Center"
+              : "Relief Camp",
+        }))
+      : TAWANG_SHELTERS;
+
+  const roadLinks = activeShelters.map((s) => [centerCoord, [s.lat, s.lon] as [number, number]]);
+
   return (
     <div className="relative w-full h-full min-h-[300px]">
       <MapContainer
-        center={[27.587, 91.858]}
+        center={centerCoord}
         zoom={13}
         scrollWheelZoom={false}
-        className="w-full h-full"
+        className="w-full h-full bg-slate-100"
         attributionControl={true}
       >
         <TileLayer
@@ -159,10 +178,10 @@ export default function LeafletShelterMap({ onSelectShelter }: LeafletShelterMap
           subdomains="abcd"
         />
 
-        <ShelterMapBoundsController />
+        <ShelterMapBoundsController shelters={activeShelters} center={centerCoord} />
 
-        {/* Road Links to Shelters */}
-        {SHELTER_ROADS.map((roadCoords, idx) => (
+        {/* Dynamic Road Links to Shelters */}
+        {roadLinks.map((roadCoords, idx) => (
           <Polyline
             key={`road-${idx}`}
             positions={roadCoords}
@@ -175,25 +194,25 @@ export default function LeafletShelterMap({ onSelectShelter }: LeafletShelterMap
           />
         ))}
 
-        {/* Tawang Sector Current Location Marker */}
-        <Marker position={[27.586, 91.859]} icon={createOriginIcon()}>
+        {/* Current Location / Sector Marker */}
+        <Marker position={centerCoord} icon={createOriginIcon()}>
           <Popup className="sentinalx-popup">
             <div className="p-1 space-y-1">
               <span className="text-[9px] font-black uppercase text-blue-600 tracking-wider">
                 CURRENT SECTOR
               </span>
               <div className="font-extrabold text-xs text-slate-900">
-                Tawang Sector (27.586°N, 91.859°E)
+                {sectorName} ({centerCoord[0].toFixed(3)}°N, {centerCoord[1].toFixed(3)}°E)
               </div>
               <p className="text-[10px] text-slate-500">
-                Active early warning sector with designated evacuation corridors.
+                Designated departure point with active emergency relief staging.
               </p>
             </div>
           </Popup>
         </Marker>
 
-        {/* 3 Interactive Shelter Markers */}
-        {TAWANG_SHELTERS.map((shelter) => (
+        {/* Interactive Shelter Markers */}
+        {activeShelters.map((shelter) => (
           <Marker
             key={shelter.id}
             position={[shelter.lat, shelter.lon]}
@@ -214,29 +233,27 @@ export default function LeafletShelterMap({ onSelectShelter }: LeafletShelterMap
                     {shelter.status}
                   </span>
                   <span className="text-[10px] font-mono font-bold text-slate-500">
-                    {shelter.distance} away
+                    {shelter.distance}
                   </span>
                 </div>
 
-                {/* Name */}
+                {/* Name & Type */}
                 <div>
-                  <h4 className="font-black text-xs text-slate-900 leading-snug">
+                  <div className="font-extrabold text-xs text-slate-900 leading-tight">
                     {shelter.name}
-                  </h4>
-                  <span className="text-[10px] text-slate-500 font-medium">
-                    {shelter.type} • Tawang Sector
-                  </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-semibold">{shelter.type}</span>
                 </div>
 
-                {/* Capacity */}
+                {/* Capacity Progress Bar */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] font-bold text-slate-700">
-                    <span>Capacity</span>
-                    <span className="font-mono text-emerald-700">{shelter.capacityPercent}% Available</span>
+                  <div className="flex justify-between text-[10px] text-slate-600 font-bold">
+                    <span>Available Capacity</span>
+                    <span className="text-emerald-700 font-mono">{shelter.capacityPercent}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200">
                     <div
-                      className="h-full rounded-full bg-emerald-500"
+                      className="h-full bg-emerald-500 rounded-full"
                       style={{ width: `${shelter.capacityPercent}%` }}
                     />
                   </div>
@@ -253,10 +270,15 @@ export default function LeafletShelterMap({ onSelectShelter }: LeafletShelterMap
                   >
                     VIEW SHELTER
                   </button>
-                  <Link href="/routes" className="block">
+                  <Link
+                    href={`/routes?destLat=${shelter.lat}&destLon=${shelter.lon}&destName=${encodeURIComponent(
+                      shelter.name
+                    )}&shelterId=${shelter.id}`}
+                    className="block"
+                  >
                     <button
                       type="button"
-                      className="w-full h-8 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[10px] tracking-wider flex items-center justify-center gap-1 transition-colors"
+                      className="w-full h-8 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[10px] tracking-wider flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
                       <Navigation className="w-3 h-3" />
                       <span>DIRECTIONS</span>
@@ -272,7 +294,9 @@ export default function LeafletShelterMap({ onSelectShelter }: LeafletShelterMap
       {/* Floating Info Pill on Map */}
       <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/90 shadow-md text-[10px] font-bold text-slate-700 flex items-center gap-2 select-none">
         <Home className="w-3.5 h-3.5 text-emerald-600" />
-        <span>Tawang Sector • 3 Active Relief Shelters</span>
+        <span>
+          {sectorName} • {activeShelters.length} Active Relief Shelters
+        </span>
       </div>
     </div>
   );

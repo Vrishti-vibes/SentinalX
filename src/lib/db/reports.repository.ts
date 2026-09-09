@@ -9,71 +9,283 @@ import {
 } from "@/types/database";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 
+import fs from "fs";
+import path from "path";
+
 // Global in-memory persistence store (active cache & fallback when database is not configured)
 interface MemoryDbStore {
   reports: Map<string, IncidentReportRecord>;
   history: Map<string, ReportStatusHistoryRecord[]>;
 }
 
+const PERSISTENCE_DIR = path.join(process.cwd(), ".next");
+const PERSISTENCE_FILE = path.join(PERSISTENCE_DIR, "sentinalx_reports_store.json");
+
+function loadPersistedStore(): MemoryDbStore | null {
+  try {
+    if (fs.existsSync(PERSISTENCE_FILE)) {
+      const raw = fs.readFileSync(PERSISTENCE_FILE, "utf-8");
+      const data = JSON.parse(raw);
+      if (data && Array.isArray(data.reports) && Array.isArray(data.history)) {
+        const reports = new Map<string, IncidentReportRecord>(data.reports);
+        const history = new Map<string, ReportStatusHistoryRecord[]>(data.history);
+        if (reports.size > 0) {
+          return { reports, history };
+        }
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return null;
+}
+
+function savePersistedStore(store: MemoryDbStore) {
+  try {
+    if (!fs.existsSync(PERSISTENCE_DIR)) {
+      fs.mkdirSync(PERSISTENCE_DIR, { recursive: true });
+    }
+    const payload = JSON.stringify(
+      {
+        reports: Array.from(store.reports.entries()),
+        history: Array.from(store.history.entries()),
+      },
+      null,
+      2
+    );
+    fs.writeFileSync(PERSISTENCE_FILE, payload, "utf-8");
+  } catch {
+    // ignore
+  }
+}
+
 function createInitialStore(): MemoryDbStore {
+  const persisted = loadPersistedStore();
+  if (persisted) return persisted;
+
   const reports = new Map<string, IncidentReportRecord>();
   const history = new Map<string, ReportStatusHistoryRecord[]>();
 
-  const seedReport: IncidentReportRecord = {
-    id: "rep-seed-001",
-    reportId: "SX-LS-2048",
-    hazardType: "Landslide",
-    locationName: "Tawang Sector, North Eastern Region",
-    latitude: 27.586,
-    longitude: 91.859,
-    severity: 4,
-    description:
-      "Observed active rockfall and debris accumulation on highway shoulder near Km 4. Road partially blocked.",
-    photoUrl: "https://demo.sentinalx.ner/evidence/Hazard_Evidence_Tawang_Km4.jpg",
-    submittedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    verificationStatus: "VERIFIED",
-    responseStatus: "RESPONSE_ASSIGNED",
-    assignedTeam: "SDRF Quick Response Unit Alpha (Tawang HQ)",
-    estimatedResponseMinutes: 15,
-    storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
-  };
-
-  reports.set(seedReport.reportId, seedReport);
-
-  const seedHistory: ReportStatusHistoryRecord[] = [
+  const seedReports: IncidentReportRecord[] = [
     {
-      id: "hist-001",
+      id: "rep-seed-001",
       reportId: "SX-LS-2048",
-      status: "SUBMITTED",
-      message: "Report logged via citizen field interface.",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      hazardType: "Landslide",
+      locationName: "Tawang Sector, North Eastern Region",
+      latitude: 27.586,
+      longitude: 91.859,
+      severity: 4,
+      description:
+        "Observed active rockfall and debris accumulation on highway shoulder near Km 4. Road partially blocked.",
+      photoUrl: "https://demo.sentinalx.ner/evidence/Hazard_Evidence_Tawang_Km4.jpg",
+      submittedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+      verificationStatus: "PENDING_VERIFICATION",
+      responseStatus: "NEW",
+      assignedTeam: null,
+      estimatedResponseMinutes: null,
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
     },
     {
-      id: "hist-002",
-      reportId: "SX-LS-2048",
-      status: "VERIFIED",
-      message: "Cross-verified with geotechnical sensor node telemetry.",
-      timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+      id: "rep-seed-002",
+      reportId: "SX-FL-2049",
+      hazardType: "Flooding",
+      locationName: "Gangtok Sector, Sikkim",
+      latitude: 27.331,
+      longitude: 88.613,
+      severity: 4,
+      description:
+        "Flash flood water overtopping NH-10 culvert at Teesta lowlands. Silt and mudflow impeding vehicles.",
+      photoUrl: null,
+      submittedAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+      verificationStatus: "VERIFIED",
+      responseStatus: "VERIFIED",
+      assignedTeam: null,
+      estimatedResponseMinutes: 25,
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
     },
     {
-      id: "hist-003",
-      reportId: "SX-LS-2048",
-      status: "AUTHORITIES_NOTIFIED",
-      message: "Alert dispatched to district disaster management authority.",
-      timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+      id: "rep-seed-003",
+      reportId: "SX-RB-2050",
+      hazardType: "Road Blockage",
+      locationName: "Shillong Sector, Meghalaya",
+      latitude: 25.578,
+      longitude: 91.893,
+      severity: 3,
+      description:
+        "Transverse tension fissure and road subsidence near Km 18 bypass. Single-lane bottleneck.",
+      photoUrl: null,
+      submittedAt: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
+      verificationStatus: "VERIFIED",
+      responseStatus: "DISPATCHED",
+      assignedTeam: "Shillong Field Unit",
+      estimatedResponseMinutes: 15,
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
     },
     {
-      id: "hist-004",
-      reportId: "SX-LS-2048",
-      status: "RESPONSE_ASSIGNED",
-      message: "SDRF Quick Response Unit dispatched from Tawang HQ.",
-      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      id: "rep-seed-004",
+      reportId: "SX-LS-2051",
+      hazardType: "Landslide",
+      locationName: "Haflong Sector, Assam",
+      latitude: 25.176,
+      longitude: 93.018,
+      severity: 5,
+      description:
+        "Major mudslide blocking Dima Hasao railway bypass. Heavy debris flow across road cutting.",
+      photoUrl: null,
+      submittedAt: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+      verificationStatus: "VERIFIED",
+      responseStatus: "ON_SITE",
+      assignedTeam: "Guwahati Emergency Unit",
+      estimatedResponseMinutes: 0,
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
+    },
+    {
+      id: "rep-seed-005",
+      reportId: "SX-LS-2052",
+      hazardType: "Other Hazard",
+      locationName: "Kohima Sector, Nagaland",
+      latitude: 25.675,
+      longitude: 94.108,
+      severity: 2,
+      description:
+        "Retaining wall surface fracture near residential hill slope. Minor runoff channel diverted.",
+      photoUrl: null,
+      submittedAt: new Date(Date.now() - 360 * 60 * 1000).toISOString(),
+      verificationStatus: "VERIFIED",
+      responseStatus: "RESOLVED",
+      assignedTeam: "Kohima Terrain Unit",
+      estimatedResponseMinutes: 0,
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
     },
   ];
 
-  history.set(seedReport.reportId, seedHistory);
+  for (const r of seedReports) {
+    reports.set(r.reportId, r);
+  }
 
-  return { reports, history };
+  history.set("SX-LS-2048", [
+    {
+      id: "hist-2048-1",
+      reportId: "SX-LS-2048",
+      status: "NEW",
+      message: "Incident reported by citizen via field interface. Awaiting authority review.",
+      timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    },
+  ]);
+
+  history.set("SX-FL-2049", [
+    {
+      id: "hist-2049-1",
+      reportId: "SX-FL-2049",
+      status: "NEW",
+      message: "Report logged via citizen field interface.",
+      timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2049-2",
+      reportId: "SX-FL-2049",
+      status: "VERIFIED",
+      message: "Cross-verified with Gangtok Geotechnical Sensor telemetry.",
+      timestamp: new Date(Date.now() - 95 * 60 * 1000).toISOString(),
+    },
+  ]);
+
+  history.set("SX-RB-2050", [
+    {
+      id: "hist-2050-1",
+      reportId: "SX-RB-2050",
+      status: "NEW",
+      message: "Report logged via citizen field interface.",
+      timestamp: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2050-2",
+      reportId: "SX-RB-2050",
+      status: "VERIFIED",
+      message: "Road inspector confirmed transverse fissure.",
+      timestamp: new Date(Date.now() - 150 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2050-3",
+      reportId: "SX-RB-2050",
+      status: "DISPATCHED",
+      message: "Shillong Field Unit dispatched from district base with traffic barriers.",
+      timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    },
+  ]);
+
+  history.set("SX-LS-2051", [
+    {
+      id: "hist-2051-1",
+      reportId: "SX-LS-2051",
+      status: "NEW",
+      message: "Report logged via citizen field interface.",
+      timestamp: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2051-2",
+      reportId: "SX-LS-2051",
+      status: "VERIFIED",
+      message: "Verified critical slide area. High volume debris flow.",
+      timestamp: new Date(Date.now() - 210 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2051-3",
+      reportId: "SX-LS-2051",
+      status: "DISPATCHED",
+      message: "Guwahati Emergency Unit deployed with heavy earthmovers.",
+      timestamp: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2051-4",
+      reportId: "SX-LS-2051",
+      status: "ON_SITE",
+      message: "Guwahati Emergency Unit on site. Operations underway.",
+      timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    },
+  ]);
+
+  history.set("SX-LS-2052", [
+    {
+      id: "hist-2052-1",
+      reportId: "SX-LS-2052",
+      status: "NEW",
+      message: "Report logged via citizen field interface.",
+      timestamp: new Date(Date.now() - 360 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2052-2",
+      reportId: "SX-LS-2052",
+      status: "VERIFIED",
+      message: "Verified minor slope distress.",
+      timestamp: new Date(Date.now() - 330 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2052-3",
+      reportId: "SX-LS-2052",
+      status: "DISPATCHED",
+      message: "Kohima Terrain Unit dispatched for stabilization.",
+      timestamp: new Date(Date.now() - 300 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2052-4",
+      reportId: "SX-LS-2052",
+      status: "ON_SITE",
+      message: "Kohima Terrain Unit arrived and reinforced wall footing.",
+      timestamp: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "hist-2052-5",
+      reportId: "SX-LS-2052",
+      status: "RESOLVED",
+      message: "Drainage diversion installed and footing secured. Incident resolved.",
+      timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    },
+  ]);
+
+  const store = { reports, history };
+  savePersistedStore(store);
+  return store;
 }
 
 // Global singleton in Node runtime
@@ -109,6 +321,7 @@ function mapPrismaReport(r: {
   verificationStatus: string;
   responseStatus: string;
   assignedTeam: string | null;
+  assignedTeamId?: string | null;
   estimatedResponseMinutes: number | null;
 }): IncidentReportRecord {
   return {
@@ -125,6 +338,7 @@ function mapPrismaReport(r: {
     verificationStatus: r.verificationStatus as IncidentReportRecord["verificationStatus"],
     responseStatus: r.responseStatus as ResponseStatus,
     assignedTeam: r.assignedTeam,
+    assignedTeamId: r.assignedTeamId ?? null,
     estimatedResponseMinutes: r.estimatedResponseMinutes,
     storage: "SUPABASE_POSTGRES",
   };
@@ -214,6 +428,7 @@ export const ReportsRepository = {
       }
     }
 
+    savePersistedStore(globalStore);
     return newRecord;
   },
 
@@ -296,7 +511,7 @@ export const ReportsRepository = {
   async updateReportStatus(
     reportId: string,
     payload: UpdateReportStatusPayload
-  ): Promise<{ report: IncidentReportRecord | null; history: ReportStatusHistoryRecord[] }> {
+  ): Promise<{ report: IncidentReportRecord | null; history: ReportStatusHistoryRecord[]; error?: string }> {
     const existing = globalStore.reports.get(reportId);
     if (!existing) {
       // Check if it exists in DB
@@ -313,41 +528,118 @@ export const ReportsRepository = {
     }
 
     const report = globalStore.reports.get(reportId);
+    const currentHistory = globalStore.history.get(reportId) || [];
     if (!report) return { report: null, history: [] };
+
+    // Transition Validation
+    const VALID_NEXT: Record<string, string[]> = {
+      NEW: ["UNDER_REVIEW", "VERIFIED", "REJECTED"],
+      SUBMITTED: ["UNDER_REVIEW", "VERIFIED", "REJECTED"],
+      UNDER_REVIEW: ["VERIFIED", "REJECTED"],
+      AUTHORITIES_NOTIFIED: ["VERIFIED", "DISPATCHED", "REJECTED"],
+      VERIFIED: ["DISPATCHED", "RESPONSE_ASSIGNED", "REJECTED"],
+      RESPONSE_ASSIGNED: ["DISPATCHED", "ON_SITE", "RESOLVED"],
+      DISPATCHED: ["ON_SITE", "RESOLVED"],
+      ON_SITE: ["RESOLVED"],
+      RESOLVED: [],
+      REJECTED: [],
+    };
+
+    if (payload.responseStatus && payload.responseStatus !== report.responseStatus) {
+      const allowed = VALID_NEXT[report.responseStatus] || [];
+      if (!allowed.includes(payload.responseStatus)) {
+        return {
+          report,
+          history: currentHistory,
+          error: `Invalid transition: cannot change status from ${report.responseStatus} to ${payload.responseStatus}.`,
+        };
+      }
+    }
 
     const now = new Date().toISOString();
 
-    if (payload.verificationStatus) report.verificationStatus = payload.verificationStatus;
-    if (payload.responseStatus) report.responseStatus = payload.responseStatus;
-    if (payload.assignedTeam !== undefined) report.assignedTeam = payload.assignedTeam;
+    if (payload.assignedTeam !== undefined) {
+      report.assignedTeam = payload.assignedTeam;
+    }
     if (payload.estimatedResponseMinutes !== undefined) {
       report.estimatedResponseMinutes = payload.estimatedResponseMinutes;
     }
 
+    if (payload.responseStatus) {
+      report.responseStatus = payload.responseStatus;
+      if (
+        payload.responseStatus === "VERIFIED" ||
+        payload.responseStatus === "DISPATCHED" ||
+        payload.responseStatus === "ON_SITE" ||
+        payload.responseStatus === "RESOLVED"
+      ) {
+        report.verificationStatus = "VERIFIED";
+      } else if (payload.responseStatus === "REJECTED") {
+        report.verificationStatus = "REJECTED";
+      }
+    }
+
+    if (payload.verificationStatus) {
+      report.verificationStatus = payload.verificationStatus;
+      if (payload.verificationStatus === "REJECTED") {
+        report.responseStatus = "REJECTED";
+      } else if (payload.verificationStatus === "VERIFIED" && (report.responseStatus === "NEW" || report.responseStatus === "UNDER_REVIEW" || report.responseStatus === "SUBMITTED")) {
+        report.responseStatus = "VERIFIED";
+      }
+    }
+
+    const message =
+      payload.statusMessage ||
+      (payload.responseStatus === "VERIFIED"
+        ? "Hazard report verified by authority command."
+        : payload.responseStatus === "DISPATCHED"
+        ? `${report.assignedTeam || "Response Unit"} dispatched to incident site.`
+        : payload.responseStatus === "ON_SITE"
+        ? `${report.assignedTeam || "Response Unit"} confirmed on site and operating.`
+        : payload.responseStatus === "RESOLVED"
+        ? "Hazard cleared and sector secured. Incident resolved."
+        : payload.responseStatus === "REJECTED"
+        ? "Report rejected upon field investigation."
+        : payload.assignedTeam
+        ? `Assigned response team: ${payload.assignedTeam}`
+        : `Status transitioned to ${payload.responseStatus || report.responseStatus}`);
+
     const newHistoryItem: ReportStatusHistoryRecord = {
-      id: `hist-${Date.now()}`,
+      id: `hist-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       reportId,
       status: payload.responseStatus || report.responseStatus,
-      message:
-        payload.statusMessage ||
-        `Status transitioned to ${payload.responseStatus || report.responseStatus}`,
+      message,
       timestamp: now,
     };
 
-    const currentHistory = globalStore.history.get(reportId) || [];
     currentHistory.push(newHistoryItem);
     globalStore.history.set(reportId, currentHistory);
 
-    // Persist update to Supabase via Prisma
+    // Persist to disk
+    savePersistedStore(globalStore);
+
+    // Persist update to Supabase via Prisma if configured
     if (isDatabaseConfigured) {
       try {
+        let teamId: string | null = null;
+        if (report.assignedTeam) {
+          const team = await prisma.responseTeam.findFirst({
+            where: { name: { equals: report.assignedTeam, mode: "insensitive" } },
+          });
+          if (team) {
+            teamId = team.id;
+            report.assignedTeamId = team.id;
+          }
+        }
+
         await prisma.incidentReport.update({
           where: { reportId },
           data: {
-            verificationStatus: payload.verificationStatus,
-            responseStatus: payload.responseStatus,
-            assignedTeam: payload.assignedTeam,
-            estimatedResponseMinutes: payload.estimatedResponseMinutes,
+            verificationStatus: report.verificationStatus,
+            responseStatus: report.responseStatus,
+            assignedTeam: report.assignedTeam,
+            assignedTeamId: teamId,
+            estimatedResponseMinutes: report.estimatedResponseMinutes,
             statusHistory: {
               create: {
                 status: newHistoryItem.status,
@@ -356,6 +648,18 @@ export const ReportsRepository = {
             },
           },
         });
+
+        if (teamId && payload.assignedTeam) {
+          await prisma.reportAssignment.create({
+            data: {
+              reportId,
+              teamId,
+              assignedBy: "Authority Command Center",
+              notes: payload.statusMessage || `Assigned team: ${payload.assignedTeam}`,
+              estimatedResponseMinutes: report.estimatedResponseMinutes,
+            },
+          });
+        }
       } catch (err) {
         console.warn("[ReportsRepository] Prisma update failed:", err);
       }

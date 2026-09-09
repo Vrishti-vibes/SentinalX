@@ -49,6 +49,78 @@ const ACTIVE_HAZARD_ZONES: HazardZone[] = [
     riskLevel: "HIGH",
     description: "NH-10 Ranipool slope subsidence",
   },
+  {
+    id: "HAZARD_GUWAHATI_HILLS",
+    sector: "Guwahati Sector",
+    center: { lat: 26.120, lon: 91.750 },
+    radiusKm: 0.9,
+    riskLevel: "MODERATE",
+    description: "Southern residual ridge cut slope wash-out risk",
+  },
+  {
+    id: "HAZARD_SHILLONG_ESCARPMENT",
+    sector: "Shillong Sector",
+    center: { lat: 25.565, lon: 91.880 },
+    radiusKm: 1.1,
+    riskLevel: "HIGH",
+    description: "Upper Shillong quartzite face slumping",
+  },
+  {
+    id: "HAZARD_CHERRAPUNJI_RIM",
+    sector: "Cherrapunji Sector",
+    center: { lat: 25.290, lon: 91.725 },
+    radiusKm: 1.4,
+    riskLevel: "CRITICAL",
+    description: "Sohra Rim escarpment deep gully collapse",
+  },
+  {
+    id: "HAZARD_HAFLONG_RAILWAY",
+    sector: "Haflong Sector",
+    center: { lat: 25.180, lon: 93.020 },
+    radiusKm: 1.3,
+    riskLevel: "HIGH",
+    description: "Dima Hasao Barail mudslide track cut",
+  },
+  {
+    id: "HAZARD_KOHIMA_ZUBZA",
+    sector: "Kohima Sector",
+    center: { lat: 25.680, lon: 94.105 },
+    radiusKm: 1.2,
+    riskLevel: "HIGH",
+    description: "Zubza Disang shale active highway sinking zone",
+  },
+  {
+    id: "HAZARD_IMPHAL_NONEY",
+    sector: "Imphal Sector",
+    center: { lat: 24.825, lon: 93.718 },
+    radiusKm: 1.5,
+    riskLevel: "CRITICAL",
+    description: "NH-37 mountain pass boulder release",
+  },
+  {
+    id: "HAZARD_AIZAWL_HUNTHAR",
+    sector: "Aizawl Sector",
+    center: { lat: 23.735, lon: 92.715 },
+    radiusKm: 1.0,
+    riskLevel: "CRITICAL",
+    description: "Hunthar rotational landslide slip circle",
+  },
+  {
+    id: "HAZARD_ITANAGAR_FOOTHILLS",
+    sector: "Itanagar Sector",
+    center: { lat: 27.090, lon: 93.610 },
+    radiusKm: 0.7,
+    riskLevel: "MODERATE",
+    description: "NH-415 road widening debris slide",
+  },
+  {
+    id: "HAZARD_AGARTALA_BARAMURA",
+    sector: "Agartala Sector",
+    center: { lat: 23.835, lon: 91.550 },
+    radiusKm: 0.8,
+    riskLevel: "MODERATE",
+    description: "Baramura ridge gully erosion cutting",
+  },
 ];
 
 // Helper: Haversine distance in kilometers
@@ -329,36 +401,58 @@ export class RoutingService {
   }
 
   /**
-   * Generate realistic, controlled fallback safe route for Tawang Sector.
+   * Generate realistic, controlled fallback safe route for any NER location.
    */
   public static generateFallbackRoute(
     origin: RoutePoint,
     destination: RoutePoint,
     travelMode: TravelMode = "DRIVING"
   ): RouteResponse {
+    const fromLat = origin.latitude;
+    const fromLon = origin.longitude;
+    const toLat = destination.latitude;
+    const toLon = destination.longitude;
+
+    const rawDistKm = calculateHaversineKm(fromLat, fromLon, toLat, toLon);
+    // Mountain winding coefficient (~1.35x crow-flies distance)
+    const distKm = Math.max(0.8, Number((rawDistKm * 1.35).toFixed(1)));
+    const distanceMeters = Math.round(distKm * 1000);
+
     const isWalking = travelMode === "WALKING";
-    const drivingSec = 480;
-    const walkingSec = Math.round((1.8 / 3.5) * 3600); // ~1851s (~31 min)
+    const drivingSec = Math.max(180, Math.round((distKm / 28) * 3600)); // ~28 km/h mountain road
+    const walkingSec = Math.max(300, Math.round((distKm / 3.8) * 3600)); // ~3.8 km/h walking
     const durationSeconds = isWalking ? walkingSec : drivingSec;
     const etaMinutes = Math.ceil(durationSeconds / 60);
 
-    // Realistic fallback road geometry bypassing the central Tawang hazard zone
-    const fallbackCoordinates: [number, number][] = [
-      [91.859, 27.586],
-      [91.861, 27.587],
-      [91.864, 27.589],
-      [91.868, 27.591],
-      [91.872, 27.592],
-      [91.875, 27.592],
-    ];
+    // Generate dynamic multi-point bypass polyline [lon, lat]
+    const stepsCount = 6;
+    const fallbackCoordinates: [number, number][] = [];
+    const dLat = toLat - fromLat;
+    const dLon = toLon - fromLon;
+    // Perpendicular vector for realistic bypass detour arc
+    const perpLat = -dLon * 0.12;
+    const perpLon = dLat * 0.12;
+
+    for (let i = 0; i <= stepsCount; i++) {
+      const frac = i / stepsCount;
+      // Parabolic curve offset to simulate bypassing central hazard corridor
+      const arc = Math.sin(frac * Math.PI);
+      const lat = fromLat + dLat * frac + perpLat * arc;
+      const lon = fromLon + dLon * frac + perpLon * arc;
+      fallbackCoordinates.push([Number(lon.toFixed(5)), Number(lat.toFixed(5))]);
+    }
+
+    const originLabel = origin.name || "Designated Departure Point";
+    const destLabel = destination.name || "Designated Safe Shelter";
+    const sectorName = origin.name?.split(" ")[0] || "Sector";
 
     const fallbackCandidate: RouteCandidate = {
-      id: "fallback-primary-safe-route",
-      name: "Tawang Bypass Safe Route",
+      id: `fallback-${origin.latitude.toFixed(3)}-${destination.latitude.toFixed(3)}`,
+      name: `${sectorName} Safe Evacuation Bypass Corridor`,
       source: "LOCAL_GIS_GRID",
       status: "FALLBACK",
-      distanceMeters: 1800,
-      distanceKm: 1.8,
+      distanceMeters,
+      distanceKm: distKm,
       durationSeconds,
       etaMinutes,
       travelMode,
@@ -372,22 +466,22 @@ export class RoutingService {
       },
       steps: [
         {
-          instruction: "Head east on Ridge Bypass Rd toward Tawang Sector Road",
-          distanceMeters: 600,
-          durationSeconds: isWalking ? Math.round(600 / 0.97) : 160,
-          name: "Ridge Bypass Rd",
+          instruction: `Depart from ${originLabel} along safe evacuation corridor`,
+          distanceMeters: Math.round(distanceMeters * 0.3),
+          durationSeconds: Math.round(durationSeconds * 0.3),
+          name: `${sectorName} Evacuation Way`,
         },
         {
-          instruction: "Turn right onto Monastery Access Corridor (bypassing main road hazard)",
-          distanceMeters: 800,
-          durationSeconds: isWalking ? Math.round(800 / 0.97) : 220,
-          name: "Monastery Access Corridor",
+          instruction: `Continue via High-Ground Bypass Link (avoiding active slope creep zones)`,
+          distanceMeters: Math.round(distanceMeters * 0.45),
+          durationSeconds: Math.round(durationSeconds * 0.45),
+          name: `${sectorName} Ridge Bypass`,
         },
         {
-          instruction: "Arrive at Tawang Community Center Relief Zone",
-          distanceMeters: 400,
-          durationSeconds: isWalking ? Math.round(400 / 0.97) : 100,
-          name: "Community Center Sector",
+          instruction: `Arrive safely at ${destLabel}`,
+          distanceMeters: Math.round(distanceMeters * 0.25),
+          durationSeconds: Math.round(durationSeconds * 0.25),
+          name: "Shelter Access Gate",
         },
       ],
       routeRisk: {

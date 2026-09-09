@@ -43,7 +43,7 @@ export async function checkDatabaseConnection(): Promise<{
       connected: false,
       type: "Supabase PostgreSQL",
       orm: "Prisma",
-      error: "DATABASE NOT CONFIGURED (Missing valid DATABASE_URL in environment)",
+      error: "DATABASE CONFIGURATION REQUIRED (Missing valid DATABASE_URL in environment)",
     };
   }
 

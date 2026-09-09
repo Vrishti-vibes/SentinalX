@@ -52,8 +52,17 @@ export default function AuthorityDashboard() {
   const [lastDashboardUpdateAt, setLastDashboardUpdateAt] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Prototype Response Teams list
+  const PROTOTYPE_RESPONSE_TEAMS = [
+    "Tawang Response Unit",
+    "Gangtok Highway Response Unit",
+    "Shillong Field Unit",
+    "Guwahati Emergency Unit",
+    "Kohima Terrain Unit",
+  ] as const;
+
   // Form states for assignment
-  const [assignTeamName, setAssignTeamName] = useState("SDRF Mountain Rescue Unit 2");
+  const [assignTeamName, setAssignTeamName] = useState<string>("Tawang Response Unit");
   const [assignMinutes, setAssignMinutes] = useState(15);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -77,6 +86,8 @@ export default function AuthorityDashboard() {
               (r: IncidentReportRecord) => r.reportId === selectedReport.reportId
             );
             if (updated) setSelectedReport(updated);
+          } else if (reportsJson.data.length > 0) {
+            handleSelectReport(reportsJson.data[0]);
           }
         }
       }
@@ -132,13 +143,19 @@ export default function AuthorityDashboard() {
   // 2. Select a report to view details and history
   const handleSelectReport = async (report: IncidentReportRecord) => {
     setSelectedReport(report);
+    if (report.assignedTeam) {
+      setAssignTeamName(report.assignedTeam);
+    } else {
+      setAssignTeamName(PROTOTYPE_RESPONSE_TEAMS[0]);
+    }
     setActionMessage(null);
     try {
       const res = await fetch(`/api/reports/${report.reportId}`);
       if (res.ok) {
         const json = await res.json();
-        if (json.success && Array.isArray(json.history)) {
-          setSelectedHistory(json.history);
+        if (json.success) {
+          if (json.data) setSelectedReport(json.data);
+          if (Array.isArray(json.history)) setSelectedHistory(json.history);
         }
       }
     } catch (err) {
@@ -146,7 +163,7 @@ export default function AuthorityDashboard() {
     }
   };
 
-  // 3. Authority Status Updates for Reports
+  // 3. Authority Workflow Status Updates for Reports
   const handleVerifyReport = async (reportId: string) => {
     if (!isOnline) {
       setActionMessage("Connection required for authority actions. Please reconnect to network.");
@@ -160,16 +177,18 @@ export default function AuthorityDashboard() {
         body: JSON.stringify({
           verificationStatus: "VERIFIED",
           responseStatus: "VERIFIED",
-          statusMessage: "Cross-verified with Geotechnical Sensor telemetry & field supervisor inspection.",
+          statusMessage: "Hazard verified by authority command.",
         }),
       });
 
-      if (res.ok) {
-        const json = await res.json();
+      const json = await res.json();
+      if (res.ok && json.success) {
         setActionMessage(`Report ${reportId} successfully verified!`);
         if (json.data) setSelectedReport(json.data);
         if (json.history) setSelectedHistory(json.history);
         await fetchDashboardData();
+      } else {
+        setActionMessage(json.error || "Failed to verify report.");
       }
     } catch (err) {
       console.error("Error verifying report:", err);
@@ -178,7 +197,7 @@ export default function AuthorityDashboard() {
     }
   };
 
-  const handleAssignResponse = async (reportId: string) => {
+  const handleRejectReport = async (reportId: string) => {
     if (!isOnline) {
       setActionMessage("Connection required for authority actions. Please reconnect to network.");
       return;
@@ -189,22 +208,123 @@ export default function AuthorityDashboard() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          responseStatus: "RESPONSE_ASSIGNED",
-          assignedTeam: assignTeamName,
-          estimatedResponseMinutes: assignMinutes,
-          statusMessage: `${assignTeamName} dispatched from sector command base. ETA: ${assignMinutes} min.`,
+          verificationStatus: "REJECTED",
+          responseStatus: "REJECTED",
+          statusMessage: "Report rejected upon field investigation.",
         }),
       });
 
-      if (res.ok) {
-        const json = await res.json();
-        setActionMessage(`Response team dispatched for ${reportId}!`);
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setActionMessage(`Report ${reportId} marked as REJECTED.`);
         if (json.data) setSelectedReport(json.data);
         if (json.history) setSelectedHistory(json.history);
         await fetchDashboardData();
+      } else {
+        setActionMessage(json.error || "Failed to reject report.");
       }
     } catch (err) {
-      console.error("Error assigning response:", err);
+      console.error("Error rejecting report:", err);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleAssignTeam = async (reportId: string) => {
+    if (!isOnline) {
+      setActionMessage("Connection required for authority actions. Please reconnect to network.");
+      return;
+    }
+    setIsUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignedTeam: assignTeamName,
+          statusMessage: `Response team ${assignTeamName} assigned to incident.`,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setActionMessage(`Response team ${assignTeamName} assigned to ${reportId}!`);
+        if (json.data) setSelectedReport(json.data);
+        if (json.history) setSelectedHistory(json.history);
+        await fetchDashboardData();
+      } else {
+        setActionMessage(json.error || "Failed to assign team.");
+      }
+    } catch (err) {
+      console.error("Error assigning team:", err);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleDispatchReport = async (reportId: string) => {
+    if (!isOnline) {
+      setActionMessage("Connection required for authority actions. Please reconnect to network.");
+      return;
+    }
+    setIsUpdatingStatus(true);
+    const teamToDispatch = assignTeamName || selectedReport?.assignedTeam || PROTOTYPE_RESPONSE_TEAMS[0];
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          responseStatus: "DISPATCHED",
+          assignedTeam: teamToDispatch,
+          estimatedResponseMinutes: assignMinutes || 15,
+          statusMessage: `${teamToDispatch} dispatched from sector command base. ETA: ${assignMinutes || 15} min.`,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setActionMessage(`Response unit ${teamToDispatch} dispatched for ${reportId}!`);
+        if (json.data) setSelectedReport(json.data);
+        if (json.history) setSelectedHistory(json.history);
+        await fetchDashboardData();
+      } else {
+        setActionMessage(json.error || "Failed to dispatch unit.");
+      }
+    } catch (err) {
+      console.error("Error dispatching unit:", err);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleOnSiteReport = async (reportId: string) => {
+    if (!isOnline) {
+      setActionMessage("Connection required for authority actions. Please reconnect to network.");
+      return;
+    }
+    setIsUpdatingStatus(true);
+    const team = selectedReport?.assignedTeam || assignTeamName || "Response Unit";
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          responseStatus: "ON_SITE",
+          statusMessage: `${team} confirmed on site and operating.`,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setActionMessage(`Response unit marked ON SITE for ${reportId}!`);
+        if (json.data) setSelectedReport(json.data);
+        if (json.history) setSelectedHistory(json.history);
+        await fetchDashboardData();
+      } else {
+        setActionMessage(json.error || "Failed to update status to On Site.");
+      }
+    } catch (err) {
+      console.error("Error marking on site:", err);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -222,16 +342,18 @@ export default function AuthorityDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           responseStatus: "RESOLVED",
-          statusMessage: "Hazard cleared by road maintenance & SDRF units. Road corridor open.",
+          statusMessage: "Hazard cleared by road maintenance & response units. Road corridor open.",
         }),
       });
 
-      if (res.ok) {
-        const json = await res.json();
+      const json = await res.json();
+      if (res.ok && json.success) {
         setActionMessage(`Incident ${reportId} marked as RESOLVED.`);
         if (json.data) setSelectedReport(json.data);
         if (json.history) setSelectedHistory(json.history);
         await fetchDashboardData();
+      } else {
+        setActionMessage(json.error || "Failed to resolve incident.");
       }
     } catch (err) {
       console.error("Error resolving report:", err);
@@ -325,15 +447,29 @@ export default function AuthorityDashboard() {
     }
   };
 
-  // KPI Calculations
-  const totalIncidents = reports.length;
-  const activeAlertsCount = alerts.filter((a) => a.status === "ACTIVE").length;
-  const activeResponsesCount = responses.filter(
-    (r) => r.status === "ASSIGNED" || r.status === "EN_ROUTE" || r.status === "ON_SITE" || r.status === "PENDING"
+  // 6 Dynamic Dashboard KPI Calculations from Reports (Requirement 7)
+  const totalReportsCount = reports.length;
+  const pendingCount = reports.filter(
+    (r) =>
+      r.responseStatus === "NEW" ||
+      r.responseStatus === "UNDER_REVIEW" ||
+      r.responseStatus === "SUBMITTED" ||
+      r.verificationStatus === "PENDING_VERIFICATION"
   ).length;
-  const pendingVerificationCount = reports.filter(
-    (r) => r.verificationStatus === "PENDING_VERIFICATION"
+  const verifiedCount = reports.filter(
+    (r) =>
+      r.responseStatus === "VERIFIED" ||
+      (r.verificationStatus === "VERIFIED" &&
+        r.responseStatus !== "DISPATCHED" &&
+        r.responseStatus !== "ON_SITE" &&
+        r.responseStatus !== "RESOLVED" &&
+        r.responseStatus !== "REJECTED")
   ).length;
+  const dispatchedCount = reports.filter(
+    (r) => r.responseStatus === "DISPATCHED" || r.responseStatus === "RESPONSE_ASSIGNED"
+  ).length;
+  const onSiteCount = reports.filter((r) => r.responseStatus === "ON_SITE").length;
+  const resolvedCount = reports.filter((r) => r.responseStatus === "RESOLVED").length;
 
   return (
     <div className="flex flex-col min-h-full bg-[#f8fafc] text-slate-900 font-sans">
@@ -436,48 +572,66 @@ export default function AuthorityDashboard() {
           </div>
         )}
 
-        {/* â”€â”€ 3. Operational KPI Quad â”€â”€ */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {/* KPI 1: Active Response Deployments */}
-          <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-blue-700 mb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider">Active Responses</span>
-              <Truck className="w-3.5 h-3.5 text-blue-600" />
-            </div>
-            <div className="text-2xl font-black font-mono text-blue-700">{activeResponsesCount}</div>
-            <div className="text-[10px] text-blue-600 font-semibold">Units In Field</div>
-          </div>
-
-          {/* KPI 2: Active Early Warning Alerts */}
-          <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-3 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-rose-700 mb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider">Active Alerts</span>
-              <BellRing className="w-3.5 h-3.5 text-rose-600" />
-            </div>
-            <div className="text-2xl font-black font-mono text-rose-700">{activeAlertsCount}</div>
-            <div className="text-[10px] text-rose-600 font-semibold">Live Warnings</div>
-          </div>
-
-          {/* KPI 3: Citizen Reports */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex flex-col justify-between">
+        {/* ── 3. Dynamic Operational KPI Hex (Requirement 7) ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          {/* KPI 1: Total Reports */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-500 mb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider">Reports</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">Total Reports</span>
               <Layers className="w-3.5 h-3.5 text-slate-600" />
             </div>
-            <div className="text-2xl font-black font-mono text-slate-900">{totalIncidents}</div>
-            <div className="text-[10px] text-slate-500 font-medium">Citizen Logged</div>
+            <div className="text-2xl font-black font-mono text-slate-900">{totalReportsCount}</div>
+            <div className="text-[10px] text-slate-500 font-medium">All NER Corridors</div>
           </div>
 
-          {/* KPI 4: Pending Verification */}
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-3 shadow-sm flex flex-col justify-between">
+          {/* KPI 2: Pending */}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-3 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between text-amber-800 mb-1">
               <span className="text-[10px] font-extrabold uppercase tracking-wider">Pending</span>
               <Clock className="w-3.5 h-3.5 text-amber-600" />
             </div>
-            <div className="text-2xl font-black font-mono text-amber-800">
-              {pendingVerificationCount}
+            <div className="text-2xl font-black font-mono text-amber-800">{pendingCount}</div>
+            <div className="text-[10px] text-amber-700 font-semibold">Awaiting Review</div>
+          </div>
+
+          {/* KPI 3: Verified */}
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between text-emerald-800 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">Verified</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <div className="text-[10px] text-amber-700 font-semibold">Awaiting review</div>
+            <div className="text-2xl font-black font-mono text-emerald-800">{verifiedCount}</div>
+            <div className="text-[10px] text-emerald-700 font-semibold">Telemetry Confirmed</div>
+          </div>
+
+          {/* KPI 4: Dispatched */}
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between text-blue-800 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">Dispatched</span>
+              <Truck className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+            <div className="text-2xl font-black font-mono text-blue-800">{dispatchedCount}</div>
+            <div className="text-[10px] text-blue-700 font-semibold">En Route to Site</div>
+          </div>
+
+          {/* KPI 5: On Site */}
+          <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between text-purple-800 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">On Site</span>
+              <MapPin className="w-3.5 h-3.5 text-purple-600" />
+            </div>
+            <div className="text-2xl font-black font-mono text-purple-800">{onSiteCount}</div>
+            <div className="text-[10px] text-purple-700 font-semibold">Active Response</div>
+          </div>
+
+          {/* KPI 6: Resolved */}
+          <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-3 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between text-teal-800 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">Resolved</span>
+              <Check className="w-3.5 h-3.5 text-teal-600" />
+            </div>
+            <div className="text-2xl font-black font-mono text-teal-800">{resolvedCount}</div>
+            <div className="text-[10px] text-teal-700 font-semibold">Sector Cleared</div>
           </div>
         </div>
 
@@ -756,194 +910,399 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
-        {/* â”€â”€ 6. Citizen Incident Triage Queue & Console â”€â”€ */}
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between">
+        {/* ── 6. Citizen Incident Triage Queue & Console (Requirement 1) ── */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden w-full max-w-full">
+          <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <div>
               <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                Citizen Incident Triage Queue
+                Citizen Incident Report Queue
               </h2>
               <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                Select an incident to review telemetry, verify &amp; dispatch units
+                Select an incident to review telemetry, verify status, assign teams &amp; dispatch units
               </p>
             </div>
-            <span className="text-[11px] font-mono font-bold text-slate-500">
-              {reports.length} Incidents
+            <span className="text-[11px] font-mono font-bold text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+              {reports.length} Reports
             </span>
           </div>
 
           <div className="divide-y divide-slate-100">
             {reports.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-500 font-medium">
+              <div className="p-8 text-center text-xs text-slate-500 font-medium">
                 No incidents in queue. All corridors clear.
               </div>
             ) : (
-              reports.map((report) => (
-                <div
-                  key={report.id}
-                  onClick={() => handleSelectReport(report)}
-                  className={`p-3.5 hover:bg-slate-50/80 cursor-pointer transition-colors flex items-start justify-between gap-3 ${
-                    selectedReport?.reportId === report.reportId ? "bg-rose-50/50 ring-1 ring-rose-200" : ""
-                  }`}
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-black text-slate-900">
-                        {report.reportId}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          report.severity >= 4
-                            ? "bg-rose-100 text-rose-800"
-                            : report.severity === 3
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
-                      >
-                        Sev {report.severity} â€¢ {report.severity >= 4 ? "High Risk" : report.severity === 3 ? "Moderate" : "Low"}
-                      </span>
+              reports.map((report) => {
+                const isSelected = selectedReport?.reportId === report.reportId;
+                const statusColor =
+                  report.responseStatus === "RESOLVED"
+                    ? "bg-teal-100 text-teal-800 border-teal-200"
+                    : report.responseStatus === "ON_SITE"
+                    ? "bg-purple-100 text-purple-800 border-purple-200"
+                    : report.responseStatus === "DISPATCHED" || report.responseStatus === "RESPONSE_ASSIGNED"
+                    ? "bg-blue-100 text-blue-800 border-blue-200"
+                    : report.responseStatus === "VERIFIED"
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                    : report.responseStatus === "REJECTED"
+                    ? "bg-rose-100 text-rose-800 border-rose-200"
+                    : "bg-amber-100 text-amber-800 border-amber-200";
 
-                      {report.verificationStatus === "VERIFIED" ? (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                          âœ“ Verified
+                return (
+                  <div
+                    key={report.id || report.reportId}
+                    data-testid={`report-card-${report.reportId}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSelectReport(report)}
+                    className={`p-3.5 sm:p-4 hover:bg-slate-50/80 cursor-pointer transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0 ${
+                      isSelected ? "bg-blue-50/60 ring-2 ring-blue-500/20" : ""
+                    }`}
+                  >
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      {/* Top Badges Row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                          {report.reportId}
                         </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">
-                          â— Pending
+                        <span className="font-extrabold text-xs text-slate-800">
+                          {report.hazardType}
                         </span>
-                      )}
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            report.severity >= 4
+                              ? "bg-rose-100 text-rose-800"
+                              : report.severity === 3
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}
+                        >
+                          Sev {report.severity} • {report.severity >= 4 ? "High Risk" : report.severity === 3 ? "Moderate" : "Low"}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-wide border uppercase ${statusColor}`}>
+                          {report.responseStatus.replace("_", " ")}
+                        </span>
+                      </div>
+
+                      {/* Location & Team Row */}
+                      <div className="flex items-center gap-3 text-xs text-slate-700 font-semibold flex-wrap">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{report.locationName}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-500 font-normal">
+                          <Truck className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="font-medium text-slate-700">{report.assignedTeam || "Unassigned"}</span>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-[11px] text-slate-600 line-clamp-1 break-words">
+                        {report.description}
+                      </p>
                     </div>
 
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate">{report.locationName}</span>
+                    {/* Right side: Time & select arrow */}
+                    <div className="flex items-center justify-between sm:flex-col sm:items-end gap-1.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                      <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>
+                          {report.submittedAt
+                            ? new Date(report.submittedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            : "--"}
+                        </span>
+                      </span>
+                      <div className="flex items-center gap-1 text-xs font-bold text-blue-600">
+                        <span>{isSelected ? "Selected" : "Review"}</span>
+                        <ChevronRight className="w-4 h-4 text-blue-500" />
+                      </div>
                     </div>
-
-                    <p className="text-[11px] text-slate-600 line-clamp-1">
-                      {report.description}
-                    </p>
                   </div>
-
-                  <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
-                    <span className="text-[10px] font-bold uppercase text-slate-500">
-                      {report.responseStatus.replace("_", " ")}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* â”€â”€ 7. Selected Incident Detail & Triage Action Console â”€â”€ */}
+        {/* ── 7. Selected Incident Detail & Authority Workflow Console (Requirement 2, 3, 4, 5) ── */}
         {selectedReport && (
-          <div className="rounded-2xl border-2 border-rose-200 bg-white p-4 sm:p-5 shadow-md space-y-4 animate-fadeIn">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-extrabold uppercase text-[#991b1b] tracking-wider">
-                    INCIDENT DETAILS
+          <div className="rounded-2xl border-2 border-blue-200 bg-white p-4 sm:p-6 shadow-md space-y-5 animate-fadeIn w-full max-w-full">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4 gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-extrabold uppercase text-blue-900 tracking-wider">
+                    INCIDENT REPORT DOSSIER
                   </span>
-                  <span className="font-mono text-sm font-black text-slate-900">
+                  <span className="font-mono text-sm font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
                     {selectedReport.reportId}
                   </span>
                 </div>
-                <h3 className="text-base font-extrabold text-slate-900 mt-0.5">
-                  {selectedReport.hazardType} â€¢ {selectedReport.locationName}
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 mt-1 break-words">
+                  {selectedReport.hazardType} • {selectedReport.locationName}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedReport(null)}
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs"
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs shrink-0 transition-colors"
+                title="Close details"
               >
-                âœ•
+                ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5">
+            {/* Core Metadata Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5 min-w-0">
                 <span className="text-[10px] font-extrabold uppercase text-slate-500">Severity</span>
-                <div className="font-bold text-slate-900">
-                  Level {selectedReport.severity} ({selectedReport.severity >= 4 ? "High Risk" : "Moderate"})
+                <div className="font-extrabold text-slate-900 truncate">
+                  Level {selectedReport.severity} ({selectedReport.severity >= 4 ? "High Risk" : selectedReport.severity === 3 ? "Moderate" : "Low"})
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5">
-                <span className="text-[10px] font-extrabold uppercase text-slate-500">Verification</span>
-                <div className={`font-bold ${selectedReport.verificationStatus === "VERIFIED" ? "text-emerald-700" : "text-amber-700"}`}>
-                  {selectedReport.verificationStatus.replace("_", " ")}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5 min-w-0">
+                <span className="text-[10px] font-extrabold uppercase text-slate-500">Current Status</span>
+                <div className="font-extrabold text-blue-700 uppercase truncate">
+                  {selectedReport.responseStatus.replace("_", " ")}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5 min-w-0">
+                <span className="text-[10px] font-extrabold uppercase text-slate-500">Assigned Team</span>
+                <div className="font-extrabold text-slate-900 truncate">
+                  {selectedReport.assignedTeam || "None Assigned"}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-0.5 min-w-0">
+                <span className="text-[10px] font-extrabold uppercase text-slate-500">Coordinates</span>
+                <div className="font-mono text-slate-700 font-bold truncate">
+                  {selectedReport.latitude.toFixed(4)}°N, {selectedReport.longitude.toFixed(4)}°E
                 </div>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            {/* Description */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
               <span className="text-[10px] font-extrabold uppercase text-slate-500">Citizen Description</span>
-              <p className="text-xs text-slate-700 leading-relaxed">{selectedReport.description}</p>
+              <p className="text-xs text-slate-700 leading-relaxed break-words">{selectedReport.description}</p>
             </div>
 
-            <div className="space-y-2 pt-1 border-t border-slate-100">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 block">
-                Authority Triage Actions
-              </span>
+            {/* ── Action Buttons Control Console ── */}
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Authority Command Actions</span>
+                </span>
+                <span className="text-[10px] font-mono text-slate-500">
+                  Step-by-step verified workflow
+                </span>
+              </div>
 
-              {selectedReport.verificationStatus === "PENDING_VERIFICATION" && (
-                <button
-                  type="button"
-                  disabled={isUpdatingStatus}
-                  onClick={() => handleVerifyReport(selectedReport.reportId)}
-                  className="w-full h-10 rounded-xl bg-[#065f46] hover:bg-[#047857] text-white font-bold text-xs tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{isUpdatingStatus ? "VERIFYING..." : "VERIFY HAZARD REPORT"}</span>
-                </button>
-              )}
+              {/* State Transition Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {/* 1. VERIFY Button */}
+                {(() => {
+                  const canVerify =
+                    selectedReport.responseStatus === "NEW" ||
+                    selectedReport.responseStatus === "UNDER_REVIEW" ||
+                    selectedReport.responseStatus === "SUBMITTED" ||
+                    selectedReport.verificationStatus === "PENDING_VERIFICATION";
+                  return (
+                    <button
+                      type="button"
+                      data-testid="btn-verify-report"
+                      disabled={isUpdatingStatus || !canVerify}
+                      onClick={() => handleVerifyReport(selectedReport.reportId)}
+                      className={`h-11 px-3 rounded-xl font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs ${
+                        canVerify
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                          : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{isUpdatingStatus ? "UPDATING..." : "VERIFY"}</span>
+                    </button>
+                  );
+                })()}
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold uppercase text-slate-600">
-                    Assign Response Unit
-                  </label>
-                  <input
-                    type="text"
+                {/* 2. REJECT Button */}
+                {(() => {
+                  const canReject =
+                    selectedReport.responseStatus !== "RESOLVED" &&
+                    selectedReport.responseStatus !== "REJECTED";
+                  return (
+                    <button
+                      type="button"
+                      data-testid="btn-reject-report"
+                      disabled={isUpdatingStatus || !canReject}
+                      onClick={() => handleRejectReport(selectedReport.reportId)}
+                      className={`h-11 px-3 rounded-xl font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs ${
+                        canReject
+                          ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 cursor-pointer"
+                          : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60"
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                      <span>REJECT</span>
+                    </button>
+                  );
+                })()}
+
+                {/* 3. DISPATCH Button */}
+                {(() => {
+                  const canDispatch =
+                    selectedReport.responseStatus === "VERIFIED" ||
+                    (selectedReport.verificationStatus === "VERIFIED" &&
+                      selectedReport.responseStatus !== "DISPATCHED" &&
+                      selectedReport.responseStatus !== "ON_SITE" &&
+                      selectedReport.responseStatus !== "RESOLVED" &&
+                      selectedReport.responseStatus !== "REJECTED");
+                  return (
+                    <button
+                      type="button"
+                      data-testid="btn-dispatch-report"
+                      disabled={isUpdatingStatus || !canDispatch}
+                      onClick={() => handleDispatchReport(selectedReport.reportId)}
+                      className={`h-11 px-3 rounded-xl font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs ${
+                        canDispatch
+                          ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                          : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60"
+                      }`}
+                    >
+                      <Truck className="w-4 h-4" />
+                      <span>DISPATCH</span>
+                    </button>
+                  );
+                })()}
+
+                {/* 4. ON SITE Button */}
+                {(() => {
+                  const canOnSite =
+                    selectedReport.responseStatus === "DISPATCHED" ||
+                    selectedReport.responseStatus === "RESPONSE_ASSIGNED";
+                  return (
+                    <button
+                      type="button"
+                      data-testid="btn-onsite-report"
+                      disabled={isUpdatingStatus || !canOnSite}
+                      onClick={() => handleOnSiteReport(selectedReport.reportId)}
+                      className={`h-11 px-3 rounded-xl font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs ${
+                        canOnSite
+                          ? "bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
+                          : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60"
+                      }`}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      <span>ON SITE</span>
+                    </button>
+                  );
+                })()}
+
+                {/* 5. RESOLVE Button */}
+                {(() => {
+                  const canResolve =
+                    selectedReport.responseStatus === "ON_SITE" ||
+                    selectedReport.responseStatus === "DISPATCHED" ||
+                    selectedReport.responseStatus === "RESPONSE_ASSIGNED";
+                  return (
+                    <button
+                      type="button"
+                      data-testid="btn-resolve-report"
+                      disabled={isUpdatingStatus || !canResolve}
+                      onClick={() => handleResolveReport(selectedReport.reportId)}
+                      className={`h-11 px-3 rounded-xl font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs ${
+                        canResolve
+                          ? "bg-teal-700 hover:bg-teal-800 text-white cursor-pointer"
+                          : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60"
+                      }`}
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>RESOLVE</span>
+                    </button>
+                  );
+                })()}
+              </div>
+
+              {/* Team Assignment Box (Requirement 3) */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <label className="text-[10px] font-extrabold uppercase text-slate-600 block">
+                  Select &amp; Assign Prototype Response Team (Requirement 3)
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
                     value={assignTeamName}
                     onChange={(e) => setAssignTeamName(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-900"
-                    placeholder="Team name"
-                  />
+                    className="flex-1 px-3 py-2 text-xs font-bold rounded-lg border border-slate-300 bg-white text-slate-900"
+                  >
+                    {PROTOTYPE_RESPONSE_TEAMS.map((team) => (
+                      <option key={team} value={team}>
+                        {team}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    data-testid="btn-assign-team"
+                    disabled={isUpdatingStatus || selectedReport.responseStatus === "REJECTED" || selectedReport.responseStatus === "RESOLVED"}
+                    onClick={() => handleAssignTeam(selectedReport.reportId)}
+                    className="h-9 px-4 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs tracking-wider flex items-center justify-center gap-1.5 shrink-0 transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>ASSIGN TEAM</span>
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={isUpdatingStatus}
-                  onClick={() => handleAssignResponse(selectedReport.reportId)}
-                  className="w-full h-9 rounded-lg bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isUpdatingStatus ? "DISPATCHING..." : "DISPATCH & ASSIGN TEAM"}</span>
-                </button>
               </div>
 
-              {selectedReport.responseStatus !== "RESOLVED" && (
-                <button
-                  type="button"
-                  disabled={isUpdatingStatus}
-                  onClick={() => handleResolveReport(selectedReport.reportId)}
-                  className="w-full h-9 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>MARK HAZARD RESOLVED / CLEARED</span>
-                </button>
-              )}
-
+              {/* Direct Link to Citizen Track Report View */}
               <Link
                 href={`/report/track?id=${selectedReport.reportId}`}
                 target="_blank"
-                className="w-full h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 transition-all block text-center leading-9"
+                className="w-full h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all block text-center leading-10 shadow-2xs"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-4 h-4 text-blue-700" />
                 <span>OPEN CITIZEN TRACK REPORT VIEW</span>
               </Link>
+            </div>
+
+            {/* ── Status History Timeline (Requirement 5) ── */}
+            <div className="pt-3 border-t border-slate-100 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700">
+                  Status Audit History (Timestamped)
+                </span>
+                <span className="font-mono text-[10px] text-slate-500 font-bold">
+                  {selectedHistory.length} Events
+                </span>
+              </div>
+
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {selectedHistory.length === 0 ? (
+                  <div className="text-xs text-slate-500 p-2">No history recorded yet.</div>
+                ) : (
+                  selectedHistory.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-2 text-xs"
+                    >
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-[10px] text-blue-700 uppercase">
+                            [{item.status}]
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-800 break-words">
+                            {item.message}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                        {item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "--"}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}

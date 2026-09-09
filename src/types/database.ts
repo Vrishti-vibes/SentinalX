@@ -1,11 +1,16 @@
 export type VerificationStatus = "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED";
 
 export type ResponseStatus =
-  | "SUBMITTED"
+  | "NEW"
+  | "UNDER_REVIEW"
   | "VERIFIED"
+  | "DISPATCHED"
+  | "ON_SITE"
+  | "RESOLVED"
+  | "REJECTED"
+  | "SUBMITTED"
   | "AUTHORITIES_NOTIFIED"
-  | "RESPONSE_ASSIGNED"
-  | "RESOLVED";
+  | "RESPONSE_ASSIGNED";
 
 export type HazardType = "Landslide" | "Flooding" | "Road Blockage" | "Other Hazard";
 export type SeverityLevel = 1 | 2 | 3 | 4 | 5;
@@ -27,6 +32,7 @@ export interface IncidentReportRecord {
   verificationStatus: VerificationStatus;
   responseStatus: ResponseStatus;
   assignedTeam?: string | null;
+  assignedTeamId?: string | null;
   estimatedResponseMinutes?: number | null;
   storage: "SUPABASE_POSTGRES" | "DATABASE_NOT_CONFIGURED" | "DEMO_IN_MEMORY";
   clientReportId?: string | null;

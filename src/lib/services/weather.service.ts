@@ -13,8 +13,15 @@ export const DEFAULT_NER_LOCATION: LocationInfo = {
   elevation: 3048,
 };
 
-// Known NER reference locations
+// Known NER reference locations (All 8 NER States + Regional Overview)
 export const NER_LOCATIONS: Record<string, LocationInfo> = {
+  ner: {
+    name: "North Eastern Region (NER Overview)",
+    state: "All 8 NER States",
+    latitude: 26.2006,
+    longitude: 92.9376,
+    elevation: 1200,
+  },
   tawang: DEFAULT_NER_LOCATION,
   zemithang: {
     name: "Zemithang Valley",
@@ -23,6 +30,13 @@ export const NER_LOCATIONS: Record<string, LocationInfo> = {
     longitude: 91.718,
     elevation: 2300,
   },
+  itanagar: {
+    name: "Itanagar Capital Complex",
+    state: "Arunachal Pradesh",
+    latitude: 27.0844,
+    longitude: 93.6053,
+    elevation: 320,
+  },
   gangtok: {
     name: "Gangtok / Sevoke Corridor",
     state: "Sikkim",
@@ -30,19 +44,61 @@ export const NER_LOCATIONS: Record<string, LocationInfo> = {
     longitude: 88.606,
     elevation: 1650,
   },
-  shillong: {
-    name: "Cherrapunji / Sonapur Ridge",
-    state: "Meghalaya",
-    latitude: 25.27,
-    longitude: 91.73,
-    elevation: 1484,
+  guwahati: {
+    name: "Guwahati Metropolitan",
+    state: "Assam",
+    latitude: 26.1445,
+    longitude: 91.7362,
+    elevation: 55,
   },
   haflong: {
-    name: "Haflong / Jatinga",
+    name: "Haflong / Dima Hasao",
     state: "Assam",
-    latitude: 25.17,
-    longitude: 93.02,
+    latitude: 25.1764,
+    longitude: 93.0182,
     elevation: 680,
+  },
+  shillong: {
+    name: "Shillong / East Khasi Hills",
+    state: "Meghalaya",
+    latitude: 25.5788,
+    longitude: 91.8933,
+    elevation: 1525,
+  },
+  cherrapunji: {
+    name: "Cherrapunji (Sohra) Rim",
+    state: "Meghalaya",
+    latitude: 25.2986,
+    longitude: 91.7314,
+    elevation: 1484,
+  },
+  kohima: {
+    name: "Kohima / Zubza Basin",
+    state: "Nagaland",
+    latitude: 25.6751,
+    longitude: 94.1086,
+    elevation: 1444,
+  },
+  imphal: {
+    name: "Imphal / Jiribam Corridor",
+    state: "Manipur",
+    latitude: 24.8170,
+    longitude: 93.9368,
+    elevation: 786,
+  },
+  aizawl: {
+    name: "Aizawl Urban Slope",
+    state: "Mizoram",
+    latitude: 23.7271,
+    longitude: 92.7176,
+    elevation: 1132,
+  },
+  agartala: {
+    name: "Agartala / Baramura Hills",
+    state: "Tripura",
+    latitude: 23.8315,
+    longitude: 91.2868,
+    elevation: 35,
   },
 };
 
