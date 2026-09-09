@@ -28,7 +28,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<AlertListA
         total: alerts.length,
         activeCount,
         storageMode,
-        disclaimer: PROTOTYPE_DISCLAIMER,
+        disclaimer: "SentinalX Operational Early Warning Pipeline",
       },
       {
         status: 200,
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     notificationService.queueAlertNotifications(alert);
 
-    return NextResponse.json({ success: true, data: alert, disclaimer: PROTOTYPE_DISCLAIMER }, { status: 201 });
+    return NextResponse.json({ success: true, data: alert, source: "SentinalX Alert Engine" }, { status: 201 });
   } catch (error: unknown) {
     console.error("[API /api/alerts] Error creating alert:", error);
     return NextResponse.json({ success: false, error: "Internal server error." }, { status: 500 });

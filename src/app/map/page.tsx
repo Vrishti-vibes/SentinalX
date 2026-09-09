@@ -193,34 +193,64 @@ export default function LiveTerrainRiskMapScreen() {
             </p>
           </div>
 
-          {/* Location Selector Tabs */}
-          <div className="flex flex-col items-start sm:items-end gap-1">
+          {/* Location Selector Tabs & 8-State NER Selector */}
+          <div className="flex flex-col items-start sm:items-end gap-1.5">
             <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider">
-              Monitored Operational Sectors
+              North Eastern Region • Operational Sector Selector
             </span>
-            <div className="flex items-center gap-1 self-start sm:self-auto bg-slate-200/70 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setSelectedLocation("tawang")}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                  selectedLocation === "tawang"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+            <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+              <select
+                aria-label="Select North Eastern Region Operational State or Sector"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="bg-white border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-2.5 py-1.5 shadow-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               >
-                📍 Tawang Sector (AR)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedLocation("gangtok")}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                  selectedLocation === "gangtok"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                📍 Sikkim / NH-10 (SK)
-              </button>
+                <option value="ner">🌐 ALL NER — Regional Overview (8 States)</option>
+                <option value="tawang">📍 Arunachal Pradesh — Tawang Sector (NH-13)</option>
+                <option value="gangtok">📍 Sikkim — Gangtok / Sevoke (NH-10)</option>
+                <option value="assam">📍 Assam — Dima Hasao Corridor</option>
+                <option value="meghalaya">📍 Meghalaya — Shillong / Cherrapunji Ridge</option>
+                <option value="nagaland">📍 Nagaland — Kohima / Zubza Slump</option>
+                <option value="manipur">📍 Manipur — Imphal-Jiribam (NH-37)</option>
+                <option value="mizoram">📍 Mizoram — Aizawl Slope</option>
+                <option value="tripura">📍 Tripura — Baramura Hill Range</option>
+              </select>
+
+              <div className="hidden sm:flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLocation("ner")}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    selectedLocation === "ner"
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  NER Overview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLocation("tawang")}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    selectedLocation === "tawang"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Tawang (AR)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLocation("gangtok")}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                    selectedLocation === "gangtok"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Sikkim (SK)
+                </button>
+              </div>
             </div>
           </div>
         </div>

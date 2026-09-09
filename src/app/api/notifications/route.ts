@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { notificationService } from "@/lib/services/notification.service";
-import { PROTOTYPE_DISCLAIMER } from "@/lib/services/risk.service";
+import { NotificationsRepository } from "@/lib/db/notifications.repository";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!, 10) : 50;
 
-    const notifications = notificationService.listNotifications(limit);
+    const deliveries = await NotificationsRepository.getDeliveries(limit);
 
     return NextResponse.json(
       {
         success: true,
-        data: notifications,
-        total: notifications.length,
-        deliveryModel: "PROTOTYPE_OUTBOX (In-App active; SMS/Push simulated)",
-        disclaimer: PROTOTYPE_DISCLAIMER,
+        data: deliveries,
+        total: deliveries.length,
+        source: "notification_deliveries table",
       },
       {
         status: 200,

@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                      String         @id @default(uuid())
+  email                   String?        @unique
+  phoneNumber             String?        @map("phone_number")
+  fullName                String         @map("full_name")
+  role                    String         @default("CITIZEN") // CITIZEN, RESPONDER, AUTHORITY, ADMIN
+  state                   String?        @default("Arunachal Pradesh")
+  district                String?
+  notificationPreferences Json?          @default("{\"in_app\": true, \"sms\": true, \"push\": true}") @map("notification_preferences")
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  incidentReports         IncidentReport[]
+  notifications           Notification[]
+
+  @@map("users")
+}
+
+model Location {
+  id                 String   @id // tawang, gangtok, etc.
+  name               String
+  state              String
+  latitude           Float
+  longitude          Float
+  elevationMeters    Float?   @map("elevation_meters")
+  vulnerabilityIndex Float?   @default(0.5) @map("vulnerability_index")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  sensors             Sensor[]
+  shelters            Shelter[]
+  roads               Road[]
+  riskAssessments     RiskAssessment[]
+  weatherObservations WeatherObservation[]
+  alerts              Alert[]
+
+  @@map("locations")
+}
+
+model Sensor {
+  id              String   @id // SENSOR-TW-01
+  locationId      String?  @map("location_id")
+  stationName     String   @map("station_name")
+  state           String
+  latitude        Float
+  longitude       Float
+  status          String   @default("ONLINE") // ONLINE, DEGRADED, OFFLINE
+  batteryPercent  Float?   @default(98.0) @map("battery_percent")
+  firmwareVersion String?  @default("v2.4.0") @map("firmware_version")
+  lastSeen        DateTime @default(now()) @map("last_seen")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  location        Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  readings        SensorReading[]
+
+  @@map("sensors")
+}
+
+model SensorReading {
+  id           String   @id @default(uuid())
+  sensorId     String   @map("sensor_id")
+  stationName  String   @map("station_name")
+  state        String
+  latitude     Float
+  longitude    Float
+  soilMoisture Float    @map("soil_moisture") // %
+  porePressure Float    @map("pore_pressure") // kPa
+  tiltAngle    Float    @map("tilt_angle")    // degrees
+  rainfall     Float    @map("rainfall")      // 24h mm
+  groundMotion Float?   @default(0.0) @map("ground_motion")
+  status       String   @default("ONLINE")
+  timestamp    DateTime @default(now())
+
+  sensor       Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([sensorId])
+  @@index([timestamp(sort: Desc)])
+  @@map("sensor_readings")
+}
+
+model WeatherObservation {
+  id                      String   @id @default(uuid())
+  locationId              String?  @map("location_id")
+  source                  String   @default("Open-Meteo")
+  latitude                Float
+  longitude               Float
+  temperatureC            Float?   @map("temperature_c")
+  relativeHumidityPercent Float?   @map("relative_humidity_percent")
+  precipitationMm         Float?   @map("precipitation_mm")
+  rainfall1hMm            Float?   @map("rainfall_1h_mm")
+  rainfall24hMm           Float?   @map("rainfall_24h_mm")
+  rainfall72hMm           Float?   @map("rainfall_72h_mm")
+  soilMoisturePercent     Float?   @map("soil_moisture_percent")
+  weatherCode             Int?     @map("weather_code")
+  weatherDescription      String?  @map("weather_description")
+  recordedAt              DateTime @default(now()) @map("recorded_at")
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  location                Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([locationId, recordedAt(sort: Desc)])
+  @@map("weather_observations")
+}
+
+model RiskAssessment {
+  id                 String   @id @default(uuid())
+  locationId         String?  @map("location_id")
+  locationName       String   @map("location_name")
+  latitude           Float?
+  longitude          Float?
+  score              Float    // 0-100
+  level              String   // LOW, MODERATE, HIGH, SEVERE
+  primaryThreat      String   @map("primary_threat")
+  recommendation     String
+  inputCoverageRatio Float    @default(1.0) @map("input_coverage_ratio")
+  sources            Json
+  factorSummary      Json     @map("factor_summary")
+  confidenceScore    Float?   @default(0.92) @map("confidence_score")
+  timestamp          DateTime @default(now())
+
+  location           Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([locationName, timestamp(sort: Desc)])
+  @@map("risk_assessments")
+}
+
+model Road {
+  id             String   @id
+  locationId     String?  @map("location_id")
+  name           String
+  highwayRef     String?  @map("highway_ref")
+  status         String   @default("CLEAR") // CLEAR, CAUTION, BLOCKED
+  blockageReason String?  @map("blockage_reason")
+  coordinates    Json?
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  location       Location?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  statusHistory  RoadStatusHistory[]
+
+  @@map("roads")
+}
+
+model RoadStatusHistory {
+  id             String   @id @default(uuid())
+  roadId         String   @map("road_id")
+  status         String
+  blockageReason String?  @map("blockage_reason")
+  timestamp      DateTime @default(now())
+
+  road           Road     @relation(fields: [roadId], references: [id], onDelete: Cascade)
+
+  @@map("road_status_history")
+}
+
+model Shelter {
+  id               String   @id
+  locationId       String?  @map("location_id")
+  name             String
+  sector           String
+  latitude         Float
+  longitude        Float
+  totalCapacity    Int      @map("total_capacity")
+  occupiedCapacity Int      @default(0) @map("occupied_capacity")
+  availableCapacity Int?    @map("available_capacity")
+  status           String   @default("OPEN") // OPEN, FULL, STANDBY, UNSAFE
+  safetyLevel      String   @default("SAFE") @map("safety_level") // SAFE, ADVISORY, UNSAFE
+  iconType         String   @default("community") @map("icon_type")
+  address          String
+  supplies         String?
+  contactNumber    String?  @map("contact_number")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  location         Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@map("shelters")
+}
+
+model IncidentReport {
+  id                       String   @id @default(uuid())
+  reportId                 String   @unique @map("report_id") // SX-LS-XXXX
+  userId                   String?  @map("user_id")
+  hazardType               String   @map("hazard_type")
+  locationName             String   @map("location_name")
+  latitude                 Float    @default(27.586)
+  longitude                Float    @default(91.859)
+  severity                 Int      // 1-5
+  description              String
+  photoUrl                 String?  @map("photo_url")
+  submittedAt              DateTime @default(now()) @map("submitted_at")
+  verificationStatus       String   @default("PENDING_VERIFICATION") @map("verification_status") // PENDING_VERIFICATION, VERIFIED, REJECTED
+  responseStatus           String   @default("SUBMITTED") @map("response_status") // SUBMITTED, VERIFIED, AUTHORITIES_NOTIFIED, RESPONSE_ASSIGNED, RESOLVED
+  assignedTeam             String?  @map("assigned_team")
+  estimatedResponseMinutes Int?     @default(20) @map("estimated_response_minutes")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user                     User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  statusHistory            ReportStatusHistory[]
+
+  @@index([reportId])
+  @@index([responseStatus])
+  @@index([submittedAt(sort: Desc)])
+  @@map("incident_reports")
+}
+
+model ReportStatusHistory {
+  id        String   @id @default(uuid())
+  reportId  String   @map("report_id")
+  status    String   // SUBMITTED, VERIFIED, AUTHORITIES_NOTIFIED, RESPONSE_ASSIGNED, RESOLVED
+  message   String
+  timestamp DateTime @default(now())
+
+  report    IncidentReport @relation(fields: [reportId], references: [reportId], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("report_status_history")
+}
+
+model Alert {
+  id             String    @id
+  locationId     String?   @map("location_id")
+  type           String
+  severity       String    // INFO, WATCH, HIGH, CRITICAL, SEVERE
+  title          String
+  message        String
+  locationName   String    @map("location_name")
+  latitude       Float
+  longitude      Float
+  riskScore      Float?    @map("risk_score")
+  riskLevel      String?   @map("risk_level")
+  primaryThreat  String?   @map("primary_threat")
+  triggeredBy    Json?     @map("triggered_by")
+  status         String    @default("ACTIVE") // ACTIVE, ACKNOWLEDGED, RESOLVED
+  source         String    @default("SentinalX Operational Risk Engine")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  expiresAt      DateTime? @map("expires_at")
+
+  location       Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  notifications  Notification[]
+  deliveries     NotificationDelivery[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("alerts")
+}
+
+model Notification {
+  id                String    @id @default(uuid())
+  alertId           String?   @map("alert_id")
+  userId            String?   @map("user_id")
+  channel           String    // IN_APP, SMS, PUSH, EMAIL
+  recipientType     String    @map("recipient_type") // CITIZEN, RESPONDER, AUTHORITY
+  targetDestination String    @map("target_destination")
+  severity          String
+  title             String
+  message           String
+  deliveryStatus    String    @default("QUEUED") @map("delivery_status") // QUEUED, SENT, DELIVERED, FAILED, PROVIDER_NOT_CONFIGURED
+  deliveryProvider  String?   @map("delivery_provider")
+  deliveryError     String?   @map("delivery_error")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  deliveredAt       DateTime? @map("delivered_at")
+  readAt            DateTime? @map("read_at")
+
+  alert             Alert?    @relation(fields: [alertId], references: [id], onDelete: SetNull)
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([deliveryStatus, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model NotificationDelivery {
+  id                String   @id @default(uuid())
+  notificationId    String?  @map("notification_id")
+  alertId           String?  @map("alert_id")
+  channel           String   // IN_APP, SMS, PUSH
+  recipient         String
+  status            String   // DELIVERED, PENDING, PROVIDER_NOT_CONFIGURED, FAILED
+  messagePreview    String   @map("message_preview")
+  provider          String   @default("System") // System, Twilio, APNS, FCM
+  providerMessageId String?  @map("provider_message_id")
+  error             String?
+  timestamp         DateTime @default(now())
+
+  alert             Alert?   @relation(fields: [alertId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp(sort: Desc)])
+  @@index([channel])
+  @@map("notification_deliveries")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  actorId    String?  @map("actor_id")
+  actorRole  String?  @map("actor_role")
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}

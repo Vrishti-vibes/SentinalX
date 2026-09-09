@@ -28,7 +28,7 @@ export interface IncidentReportRecord {
   responseStatus: ResponseStatus;
   assignedTeam?: string | null;
   estimatedResponseMinutes?: number | null;
-  storage: "SUPABASE_POSTGRES" | "DEMO_IN_MEMORY";
+  storage: "SUPABASE_POSTGRES" | "DATABASE_NOT_CONFIGURED" | "DEMO_IN_MEMORY";
   clientReportId?: string | null;
 }
 
@@ -67,7 +67,7 @@ export interface SensorReadingRecord {
   tiltAngle: number; // deg
   rainfall: number; // 24h mm
   status: "ONLINE" | "DEGRADED" | "OFFLINE";
-  storage: "SUPABASE_POSTGRES" | "DEMO_IN_MEMORY";
+  storage: "SUPABASE_POSTGRES" | "DATABASE_NOT_CONFIGURED" | "DEMO_IN_MEMORY";
 }
 
 export interface CreateSensorReadingPayload {
@@ -111,7 +111,7 @@ export interface RiskAssessmentRecord {
     groundMotionScore: number;
     fieldReportsScore: number;
   };
-  storage: "SUPABASE_POSTGRES" | "IN_MEMORY_STANDBY" | "DEMO_IN_MEMORY";
+  storage: "SUPABASE_POSTGRES" | "DATABASE_NOT_CONFIGURED" | "IN_MEMORY_STANDBY" | "DEMO_IN_MEMORY";
 }
 
 // ==========================================

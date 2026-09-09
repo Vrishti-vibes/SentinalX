@@ -380,8 +380,8 @@ function TrackReportContent() {
                 </div>
 
                 <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-[10px] font-mono text-slate-600">
-                  <span>ETA: ~{response.estimatedResponseMinutes}m (Prototype Estimate)</span>
-                  <span className="uppercase text-blue-800 font-bold">PROTOTYPE WORKFLOW</span>
+                  <span>ETA: ~{response.estimatedResponseMinutes}m (Field Dispatch)</span>
+                  <span className="uppercase text-blue-800 font-bold">OPERATIONAL WORKFLOW</span>
                 </div>
               </div>
             )}

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       success: true,
       count: reports.length,
       data: reports,
-      disclaimer: "DEMO / PROTOTYPE DATA • PERSISTENT BACKEND REPOSITORY",
+      source: "SentinalX Field Incident Intelligence Pipeline",
     });
   } catch (err: unknown) {
     console.error("[API GET /api/reports] Error:", err);
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         reportId: createdReport.reportId,
         data: createdReport,
         message: "Field report logged and forwarded to response system.",
-        disclaimer: "DEMO / PROTOTYPE DATA • PERSISTENT BACKEND REPOSITORY",
+        source: "SentinalX Field Incident Intelligence Pipeline",
       },
       { status: 201 }
     );

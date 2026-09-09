@@ -75,6 +75,6 @@ export interface AlertListApiResponse {
   data: AlertRecord[];
   total: number;
   activeCount: number;
-  storageMode: "SUPABASE_POSTGRES" | "DEMO_IN_MEMORY";
+  storageMode: "SUPABASE_POSTGRES" | "DATABASE_NOT_CONFIGURED" | "DEMO_IN_MEMORY";
   disclaimer: string;
 }

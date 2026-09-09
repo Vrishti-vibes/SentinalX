@@ -1,6 +1,6 @@
 import { SensorReadingRecord, CreateSensorReadingPayload } from "@/types/database";
 import { MOCK_SENSORS } from "@/data/mock/sensors.mock";
-import { getDbConfig, supabaseRestQuery } from "./client";
+import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 
 // Global in-memory sensor store
 function createInitialSensorStore(): Map<string, SensorReadingRecord> {
@@ -20,7 +20,7 @@ function createInitialSensorStore(): Map<string, SensorReadingRecord> {
       tiltAngle: s.tiltAngleDeg,
       rainfall: s.rainfall24hMm,
       status: s.status,
-      storage: "DEMO_IN_MEMORY",
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
     };
     store.set(s.id, record);
   }
@@ -36,41 +36,74 @@ export const SensorsRepository = {
   /**
    * Get all latest sensor readings
    */
-  async getSensors(): Promise<SensorReadingRecord[]> {
-    const config = getDbConfig();
+  async getSensors(locationFilter?: string): Promise<SensorReadingRecord[]> {
+    if (isDatabaseConfigured) {
+      try {
+        const readings = await prisma.sensorReading.findMany({
+          orderBy: { timestamp: "desc" },
+          take: 50,
+        });
 
-    if (config.isConfigured) {
-      const { data, error } = await supabaseRestQuery<Record<string, unknown>[]>("sensor_readings", {
-        query: { select: "*", order: "timestamp.desc", limit: "50" },
-      });
+        if (readings && readings.length > 0) {
+          const list = readings.map((d) => ({
+            id: d.id,
+            sensorId: d.sensorId,
+            stationName: d.stationName,
+            state: d.state,
+            latitude: d.latitude,
+            longitude: d.longitude,
+            timestamp: d.timestamp.toISOString(),
+            soilMoisture: d.soilMoisture,
+            porePressure: d.porePressure,
+            tiltAngle: d.tiltAngle,
+            rainfall: d.rainfall,
+            status: d.status as SensorReadingRecord["status"],
+            storage: "SUPABASE_POSTGRES" as const,
+          }));
 
-      if (!error && Array.isArray(data)) {
-        return data.map((d) => ({
-          id: String(d.id),
-          sensorId: String(d.sensor_id),
-          stationName: String(d.station_name),
-          state: String(d.state),
-          latitude: Number(d.latitude),
-          longitude: Number(d.longitude),
-          timestamp: String(d.timestamp),
-          soilMoisture: Number(d.soil_moisture),
-          porePressure: Number(d.pore_pressure),
-          tiltAngle: Number(d.tilt_angle),
-          rainfall: Number(d.rainfall),
-          status: d.status as SensorReadingRecord["status"],
-          storage: "SUPABASE_POSTGRES",
-        }));
+          if (locationFilter) {
+            const loc = locationFilter.toLowerCase();
+            return list.filter(
+              (r) =>
+                r.stationName.toLowerCase().includes(loc) ||
+                r.state.toLowerCase().includes(loc) ||
+                (loc.includes("tawang") && r.state.toLowerCase().includes("arunachal")) ||
+                (loc.includes("gangtok") && r.state.toLowerCase().includes("sikkim"))
+            );
+          }
+          return list;
+        }
+      } catch (err) {
+        console.warn("[SensorsRepository] Prisma query failed, using runtime store:", err);
       }
     }
 
-    return Array.from(globalSensors.values());
+    let list = Array.from(globalSensors.values());
+    if (locationFilter) {
+      const loc = locationFilter.toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.stationName.toLowerCase().includes(loc) ||
+          r.state.toLowerCase().includes(loc) ||
+          (loc.includes("tawang") && r.state.toLowerCase().includes("arunachal")) ||
+          (loc.includes("gangtok") && r.state.toLowerCase().includes("sikkim"))
+      );
+    }
+    return list;
+  },
+
+  /**
+   * Get latest reading for a specific location/sensor
+   */
+  async getLatestSensor(location?: string): Promise<SensorReadingRecord | null> {
+    const list = await this.getSensors(location);
+    return list.length > 0 ? list[0] : null;
   },
 
   /**
    * Ingest a new sensor reading
    */
   async recordSensorReading(payload: CreateSensorReadingPayload): Promise<SensorReadingRecord> {
-    const config = getDbConfig();
     const now = new Date().toISOString();
 
     const newRecord: SensorReadingRecord = {
@@ -86,33 +119,56 @@ export const SensorsRepository = {
       tiltAngle: payload.tiltAngle,
       rainfall: payload.rainfall,
       status: payload.status || "ONLINE",
-      storage: config.isConfigured ? "SUPABASE_POSTGRES" : "DEMO_IN_MEMORY",
+      storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
     };
 
     globalSensors.set(payload.sensorId, newRecord);
 
-    if (config.isConfigured) {
-      const dbPayload = {
-        sensor_id: newRecord.sensorId,
-        station_name: newRecord.stationName,
-        state: newRecord.state,
-        latitude: newRecord.latitude,
-        longitude: newRecord.longitude,
-        soil_moisture: newRecord.soilMoisture,
-        pore_pressure: newRecord.porePressure,
-        tilt_angle: newRecord.tiltAngle,
-        rainfall: newRecord.rainfall,
-        status: newRecord.status,
-      };
+    if (isDatabaseConfigured) {
+      try {
+        // Ensure sensor parent record exists or connectOrCreate
+        await prisma.sensor.upsert({
+          where: { id: payload.sensorId },
+          update: {
+            stationName: newRecord.stationName,
+            state: newRecord.state,
+            latitude: newRecord.latitude,
+            longitude: newRecord.longitude,
+            status: newRecord.status,
+            lastSeen: new Date(now),
+          },
+          create: {
+            id: payload.sensorId,
+            stationName: newRecord.stationName,
+            state: newRecord.state,
+            latitude: newRecord.latitude,
+            longitude: newRecord.longitude,
+            status: newRecord.status,
+            lastSeen: new Date(now),
+          },
+        });
 
-      const { error } = await supabaseRestQuery("sensor_readings", {
-        method: "POST",
-        body: dbPayload,
-      });
+        const created = await prisma.sensorReading.create({
+          data: {
+            sensorId: newRecord.sensorId,
+            stationName: newRecord.stationName,
+            state: newRecord.state,
+            latitude: newRecord.latitude,
+            longitude: newRecord.longitude,
+            soilMoisture: newRecord.soilMoisture,
+            porePressure: newRecord.porePressure,
+            tiltAngle: newRecord.tiltAngle,
+            rainfall: newRecord.rainfall,
+            status: newRecord.status,
+            timestamp: new Date(now),
+          },
+        });
 
-      if (error) {
-        console.warn("[SensorsRepository] Remote insert failed, kept in memory:", error);
-        newRecord.storage = "DEMO_IN_MEMORY";
+        newRecord.id = created.id;
+        newRecord.storage = "SUPABASE_POSTGRES";
+      } catch (err) {
+        console.warn("[SensorsRepository] Prisma insert failed, retained in memory:", err);
+        newRecord.storage = "DATABASE_NOT_CONFIGURED";
       }
     }
 

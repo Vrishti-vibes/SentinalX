@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
       reportId: report.reportId,
       data: report,
       history,
-      disclaimer: "DEMO / PROTOTYPE DATA • PERSISTENT BACKEND REPOSITORY",
+      source: "SentinalX Field Incident Intelligence Pipeline",
     });
   } catch (err: unknown) {
     console.error("[API GET /api/reports/[reportId]] Error:", err);

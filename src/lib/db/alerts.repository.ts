@@ -1,7 +1,9 @@
 import { AlertRecord, AlertSeverity, AlertType, AlertStatus } from "@/types/alert";
-import { getDbConfig, supabaseRestQuery } from "./client";
+import { prisma, isDatabaseConfigured } from "@/lib/prisma";
+import { NotificationsRepository } from "./notifications.repository";
 
-export const PROTOTYPE_ALERT_SOURCE = "SentinalX Early Warning Engine";
+export const OPERATIONAL_ALERT_SOURCE = "SentinalX Operational Risk Engine";
+export const PROTOTYPE_ALERT_SOURCE = OPERATIONAL_ALERT_SOURCE;
 
 // Seed alerts for baseline in NER
 const SEED_ALERTS: AlertRecord[] = [
@@ -25,7 +27,7 @@ const SEED_ALERTS: AlertRecord[] = [
     createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
     acknowledgedAt: null,
     resolvedAt: null,
-    source: PROTOTYPE_ALERT_SOURCE,
+    source: OPERATIONAL_ALERT_SOURCE,
   },
   {
     id: "ALT-GTK-02",
@@ -47,7 +49,7 @@ const SEED_ALERTS: AlertRecord[] = [
     createdAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
     acknowledgedAt: null,
     resolvedAt: null,
-    source: PROTOTYPE_ALERT_SOURCE,
+    source: OPERATIONAL_ALERT_SOURCE,
   },
   {
     id: "ALT-TW-03",
@@ -69,11 +71,11 @@ const SEED_ALERTS: AlertRecord[] = [
     createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
     acknowledgedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
     resolvedAt: null,
-    source: PROTOTYPE_ALERT_SOURCE,
+    source: OPERATIONAL_ALERT_SOURCE,
   },
 ];
 
-// In-memory array for local prototype execution
+// In-memory store for active sessions / fallback
 const inMemoryAlerts: AlertRecord[] = [...SEED_ALERTS];
 
 export class AlertsRepository {
@@ -87,48 +89,56 @@ export class AlertsRepository {
     cooldownMinutes: number = 30
   ): Promise<AlertRecord | null> {
     const cutoffTime = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-    const config = getDbConfig();
 
-    if (!config.isConfigured) {
-      const match = inMemoryAlerts.find(
-        (a) =>
-          a.status === "ACTIVE" &&
-          a.type === type &&
-          a.severity === severity &&
-          a.location.name.toLowerCase().includes(locationName.toLowerCase().split(" ")[0]) &&
-          a.createdAt >= cutoffTime
-      );
-      return match || null;
-    }
+    if (isDatabaseConfigured) {
+      try {
+        const found = await prisma.alert.findFirst({
+          where: {
+            status: "ACTIVE",
+            type,
+            severity,
+            createdAt: { gte: new Date(cutoffTime) },
+            locationName: { contains: locationName.split(" ")[0], mode: "insensitive" },
+          },
+        });
 
-    try {
-      const res = await supabaseRestQuery<Record<string, unknown>[]>("alerts", {
-        method: "GET",
-        query: {
-          status: "eq.ACTIVE",
-          type: `eq.${type}`,
-          severity: `eq.${severity}`,
-          created_at: `gte.${cutoffTime}`,
-          order: "created_at.desc",
-          limit: "1",
-        },
-      });
-
-      if (res.data && res.data.length > 0) {
-        return this.mapDbRowToAlert(res.data[0]);
+        if (found) {
+          return {
+            id: found.id,
+            type: found.type as AlertType,
+            severity: found.severity as AlertSeverity,
+            title: found.title,
+            message: found.message,
+            location: {
+              name: found.locationName,
+              latitude: found.latitude,
+              longitude: found.longitude,
+            },
+            riskScore: found.riskScore,
+            riskLevel: found.riskLevel,
+            primaryThreat: found.primaryThreat,
+            triggeredBy: Array.isArray(found.triggeredBy) ? (found.triggeredBy as string[]) : [],
+            status: found.status as AlertStatus,
+            createdAt: found.createdAt.toISOString(),
+            acknowledgedAt: found.acknowledgedAt?.toISOString() || null,
+            resolvedAt: found.resolvedAt?.toISOString() || null,
+            source: found.source,
+          };
+        }
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma findRecentActiveAlert failed:", err);
       }
-      return null;
-    } catch (err) {
-      console.warn("[AlertsRepository] Supabase find query failed, falling back to memory:", err);
-      const match = inMemoryAlerts.find(
-        (a) =>
-          a.status === "ACTIVE" &&
-          a.type === type &&
-          a.severity === severity &&
-          a.createdAt >= cutoffTime
-      );
-      return match || null;
     }
+
+    const match = inMemoryAlerts.find(
+      (a) =>
+        a.status === "ACTIVE" &&
+        a.type === type &&
+        a.severity === severity &&
+        a.location.name.toLowerCase().includes(locationName.toLowerCase().split(" ")[0]) &&
+        a.createdAt >= cutoffTime
+    );
+    return match || null;
   }
 
   /**
@@ -164,48 +174,48 @@ export class AlertsRepository {
       createdAt: now,
       acknowledgedAt: null,
       resolvedAt: null,
-      source: params.source || PROTOTYPE_ALERT_SOURCE,
+      source: params.source || OPERATIONAL_ALERT_SOURCE,
     };
 
-    const config = getDbConfig();
-    if (!config.isConfigured) {
-      inMemoryAlerts.unshift(newRecord);
-      return newRecord;
-    }
+    inMemoryAlerts.unshift(newRecord);
 
-    try {
-      const res = await supabaseRestQuery<Record<string, unknown>>("alerts", {
-        method: "POST",
-        body: {
-          id: newRecord.id,
-          type: newRecord.type,
-          severity: newRecord.severity,
-          title: newRecord.title,
-          message: newRecord.message,
-          location_name: newRecord.location.name,
-          latitude: newRecord.location.latitude,
-          longitude: newRecord.location.longitude,
-          risk_score: newRecord.riskScore,
-          risk_level: newRecord.riskLevel,
-          primary_threat: newRecord.primaryThreat,
-          triggered_by: newRecord.triggeredBy,
-          status: newRecord.status,
-          source: newRecord.source,
-          created_at: newRecord.createdAt,
-        },
-      });
-
-      if (res.data) {
-        return this.mapDbRowToAlert(res.data);
+    if (isDatabaseConfigured) {
+      try {
+        await prisma.alert.create({
+          data: {
+            id: newRecord.id,
+            type: newRecord.type,
+            severity: newRecord.severity,
+            title: newRecord.title,
+            message: newRecord.message,
+            locationName: newRecord.location.name,
+            latitude: newRecord.location.latitude,
+            longitude: newRecord.location.longitude,
+            riskScore: newRecord.riskScore,
+            riskLevel: newRecord.riskLevel,
+            primaryThreat: newRecord.primaryThreat,
+            triggeredBy: newRecord.triggeredBy,
+            status: newRecord.status,
+            source: newRecord.source,
+            createdAt: new Date(now),
+          },
+        });
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma insert failed, retained in memory:", err);
       }
-
-      inMemoryAlerts.unshift(newRecord);
-      return newRecord;
-    } catch (err) {
-      console.warn("[AlertsRepository] Supabase insert exception, storing in-memory:", err);
-      inMemoryAlerts.unshift(newRecord);
-      return newRecord;
     }
+
+    // Automatically dispatch multi-channel deliveries (In-App, Push, SMS)
+    await NotificationsRepository.dispatchMultiChannelAlert({
+      id: newRecord.id,
+      title: newRecord.title,
+      message: newRecord.message,
+      locationName: newRecord.location.name,
+      severity: newRecord.severity,
+      riskScore: newRecord.riskScore,
+    });
+
+    return newRecord;
   }
 
   /**
@@ -216,149 +226,185 @@ export class AlertsRepository {
     severity?: AlertSeverity;
     locationName?: string;
     limit?: number;
-  }): Promise<{ alerts: AlertRecord[]; storageMode: "SUPABASE_POSTGRES" | "DEMO_IN_MEMORY" }> {
+  }): Promise<{ alerts: AlertRecord[]; storageMode: "SUPABASE_POSTGRES" | "DATABASE_NOT_CONFIGURED" }> {
     const limit = filters?.limit ?? 50;
-    const config = getDbConfig();
 
-    if (!config.isConfigured) {
-      let filtered = [...inMemoryAlerts];
-      if (filters?.status) {
-        filtered = filtered.filter((a) => a.status === filters.status);
+    if (isDatabaseConfigured) {
+      try {
+        const where: Record<string, unknown> = {};
+        if (filters?.status) where.status = filters.status;
+        if (filters?.severity) where.severity = filters.severity;
+        if (filters?.locationName) {
+          where.locationName = { contains: filters.locationName, mode: "insensitive" };
+        }
+
+        const dbAlerts = await prisma.alert.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take: limit,
+        });
+
+        if (dbAlerts && dbAlerts.length > 0) {
+          const list: AlertRecord[] = dbAlerts.map((a) => ({
+            id: a.id,
+            type: a.type as AlertType,
+            severity: a.severity as AlertSeverity,
+            title: a.title,
+            message: a.message,
+            location: {
+              name: a.locationName,
+              latitude: a.latitude,
+              longitude: a.longitude,
+            },
+            riskScore: a.riskScore,
+            riskLevel: a.riskLevel,
+            primaryThreat: a.primaryThreat,
+            triggeredBy: Array.isArray(a.triggeredBy) ? (a.triggeredBy as string[]) : [],
+            status: a.status as AlertStatus,
+            createdAt: a.createdAt.toISOString(),
+            acknowledgedAt: a.acknowledgedAt?.toISOString() || null,
+            resolvedAt: a.resolvedAt?.toISOString() || null,
+            source: a.source,
+          }));
+
+          return { alerts: list, storageMode: "SUPABASE_POSTGRES" };
+        }
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma listAlerts failed, using memory store:", err);
       }
-      if (filters?.severity) {
-        filtered = filtered.filter((a) => a.severity === filters.severity);
-      }
-      if (filters?.locationName) {
-        filtered = filtered.filter((a) =>
-          a.location.name.toLowerCase().includes(filters.locationName!.toLowerCase())
-        );
-      }
-      return {
-        alerts: filtered.slice(0, limit),
-        storageMode: "DEMO_IN_MEMORY",
-      };
     }
 
-    try {
-      const query: Record<string, string> = {
-        order: "created_at.desc",
-        limit: String(limit),
-      };
-      if (filters?.status) query.status = `eq.${filters.status}`;
-      if (filters?.severity) query.severity = `eq.${filters.severity}`;
-
-      const res = await supabaseRestQuery<Record<string, unknown>[]>("alerts", {
-        method: "GET",
-        query,
-      });
-
-      if (res.data && Array.isArray(res.data)) {
-        return {
-          alerts: res.data.map((r) => this.mapDbRowToAlert(r)),
-          storageMode: "SUPABASE_POSTGRES",
-        };
-      }
-
-      return { alerts: inMemoryAlerts.slice(0, limit), storageMode: "DEMO_IN_MEMORY" };
-    } catch (err) {
-      console.warn("[AlertsRepository] Supabase list exception, fallback to in-memory:", err);
-      return { alerts: inMemoryAlerts.slice(0, limit), storageMode: "DEMO_IN_MEMORY" };
+    let filtered = [...inMemoryAlerts];
+    if (filters?.status) filtered = filtered.filter((a) => a.status === filters.status);
+    if (filters?.severity) filtered = filtered.filter((a) => a.severity === filters.severity);
+    if (filters?.locationName) {
+      filtered = filtered.filter((a) =>
+        a.location.name.toLowerCase().includes(filters.locationName!.toLowerCase())
+      );
     }
+
+    return {
+      alerts: filtered.slice(0, limit),
+      storageMode: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
+    };
   }
 
   /**
-   * Get an alert by ID
+   * Get single alert by ID
    */
   async getAlert(id: string): Promise<AlertRecord | null> {
-    const config = getDbConfig();
-    if (!config.isConfigured) {
-      return inMemoryAlerts.find((a) => a.id === id) || null;
-    }
+    return this.getAlertById(id);
+  }
 
-    try {
-      const res = await supabaseRestQuery<Record<string, unknown>[]>("alerts", {
-        method: "GET",
-        query: { id: `eq.${id}`, limit: "1" },
-      });
-
-      if (res.data && res.data.length > 0) {
-        return this.mapDbRowToAlert(res.data[0]);
+  async getAlertById(id: string): Promise<AlertRecord | null> {
+    if (isDatabaseConfigured) {
+      try {
+        const a = await prisma.alert.findUnique({ where: { id } });
+        if (a) {
+          return {
+            id: a.id,
+            type: a.type as AlertType,
+            severity: a.severity as AlertSeverity,
+            title: a.title,
+            message: a.message,
+            location: {
+              name: a.locationName,
+              latitude: a.latitude,
+              longitude: a.longitude,
+            },
+            riskScore: a.riskScore,
+            riskLevel: a.riskLevel,
+            primaryThreat: a.primaryThreat,
+            triggeredBy: Array.isArray(a.triggeredBy) ? (a.triggeredBy as string[]) : [],
+            status: a.status as AlertStatus,
+            createdAt: a.createdAt.toISOString(),
+            acknowledgedAt: a.acknowledgedAt?.toISOString() || null,
+            resolvedAt: a.resolvedAt?.toISOString() || null,
+            source: a.source,
+          };
+        }
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma getAlertById failed:", err);
       }
-      return inMemoryAlerts.find((a) => a.id === id) || null;
-    } catch {
-      return inMemoryAlerts.find((a) => a.id === id) || null;
     }
+
+    return inMemoryAlerts.find((a) => a.id === id) || null;
   }
 
   /**
-   * Update alert status (ACTIVE -> ACKNOWLEDGED -> RESOLVED)
+   * Update alert status
    */
-  async updateAlertStatus(id: string, newStatus: AlertStatus): Promise<AlertRecord | null> {
-    const now = new Date().toISOString();
+  async updateAlertStatus(id: string, status: AlertStatus): Promise<AlertRecord | null> {
+    if (status === "ACKNOWLEDGED") return this.acknowledgeAlert(id);
+    if (status === "RESOLVED") return this.resolveAlert(id);
 
-    // Check in-memory first
-    const memoryIdx = inMemoryAlerts.findIndex((a) => a.id === id);
-    if (memoryIdx >= 0) {
-      inMemoryAlerts[memoryIdx].status = newStatus;
-      if (newStatus === "ACKNOWLEDGED" && !inMemoryAlerts[memoryIdx].acknowledgedAt) {
-        inMemoryAlerts[memoryIdx].acknowledgedAt = now;
-      }
-      if (newStatus === "RESOLVED") {
-        inMemoryAlerts[memoryIdx].resolvedAt = now;
+    const alert = inMemoryAlerts.find((a) => a.id === id);
+    if (alert) alert.status = status;
+
+    if (isDatabaseConfigured) {
+      try {
+        await prisma.alert.update({
+          where: { id },
+          data: { status },
+        });
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma updateAlertStatus failed:", err);
       }
     }
 
-    const config = getDbConfig();
-    if (!config.isConfigured) {
-      return memoryIdx >= 0 ? inMemoryAlerts[memoryIdx] : null;
-    }
-
-    try {
-      const updates: Record<string, unknown> = {
-        status: newStatus,
-        updated_at: now,
-      };
-      if (newStatus === "ACKNOWLEDGED") updates.acknowledged_at = now;
-      if (newStatus === "RESOLVED") updates.resolved_at = now;
-
-      const res = await supabaseRestQuery<Record<string, unknown>>("alerts", {
-        method: "PATCH",
-        query: { id: `eq.${id}` },
-        body: updates,
-      });
-
-      if (res.data) {
-        return this.mapDbRowToAlert(res.data);
-      }
-      return memoryIdx >= 0 ? inMemoryAlerts[memoryIdx] : null;
-    } catch {
-      return memoryIdx >= 0 ? inMemoryAlerts[memoryIdx] : null;
-    }
+    return alert || null;
   }
 
-  private mapDbRowToAlert(row: Record<string, unknown>): AlertRecord {
-    return {
-      id: row.id as string,
-      type: row.type as AlertType,
-      severity: row.severity as AlertSeverity,
-      title: row.title as string,
-      message: row.message as string,
-      location: {
-        name: (row.location_name as string) || "North Eastern Region",
-        latitude: Number(row.latitude) || 27.586,
-        longitude: Number(row.longitude) || 91.859,
-      },
-      riskScore: row.risk_score !== null && row.risk_score !== undefined ? Number(row.risk_score) : null,
-      riskLevel: (row.risk_level as string) || null,
-      primaryThreat: (row.primary_threat as string) || null,
-      triggeredBy: Array.isArray(row.triggered_by) ? (row.triggered_by as string[]) : [],
-      status: row.status as AlertStatus,
-      createdAt: row.created_at as string,
-      acknowledgedAt: (row.acknowledged_at as string) || null,
-      resolvedAt: (row.resolved_at as string) || null,
-      source: (row.source as string) || PROTOTYPE_ALERT_SOURCE,
-    };
+  /**
+   * Acknowledge alert
+   */
+  async acknowledgeAlert(id: string): Promise<AlertRecord | null> {
+    const alert = inMemoryAlerts.find((a) => a.id === id);
+    const now = new Date().toISOString();
+    if (alert) {
+      alert.status = "ACKNOWLEDGED";
+      alert.acknowledgedAt = now;
+    }
+
+    if (isDatabaseConfigured) {
+      try {
+        await prisma.alert.update({
+          where: { id },
+          data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date(now) },
+        });
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma acknowledgeAlert failed:", err);
+      }
+    }
+
+    return alert || null;
+  }
+
+  /**
+   * Resolve alert
+   */
+  async resolveAlert(id: string): Promise<AlertRecord | null> {
+    const alert = inMemoryAlerts.find((a) => a.id === id);
+    const now = new Date().toISOString();
+    if (alert) {
+      alert.status = "RESOLVED";
+      alert.resolvedAt = now;
+    }
+
+    if (isDatabaseConfigured) {
+      try {
+        await prisma.alert.update({
+          where: { id },
+          data: { status: "RESOLVED", resolvedAt: new Date(now) },
+        });
+      } catch (err) {
+        console.warn("[AlertsRepository] Prisma resolveAlert failed:", err);
+      }
+    }
+
+    return alert || null;
   }
 }
 
 export const alertsRepository = new AlertsRepository();
+

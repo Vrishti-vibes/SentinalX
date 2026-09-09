@@ -77,15 +77,32 @@ const ICONS = {
   ),
 };
 
-// Sector Map Fly-to Controller
+// Sector Map Fly-to Controller for all 8 NER States + Overview Mode
 function MapController({ selectedLocation }: { selectedLocation: string }) {
   const map = useMap();
 
   useEffect(() => {
-    if (selectedLocation === "tawang") {
+    const loc = (selectedLocation || "tawang").toLowerCase();
+    if (loc === "ner") {
+      map.flyTo([26.2006, 92.9376], 7, { duration: 1.5 });
+    } else if (loc === "tawang" || loc === "arunachal") {
       map.flyTo([27.587, 91.860], 14, { duration: 1.2 });
-    } else if (selectedLocation === "gangtok") {
+    } else if (loc === "gangtok" || loc === "sikkim") {
       map.flyTo([27.331, 88.613], 14, { duration: 1.2 });
+    } else if (loc === "assam") {
+      map.flyTo([26.1445, 91.7362], 10, { duration: 1.2 });
+    } else if (loc === "meghalaya") {
+      map.flyTo([25.5788, 91.8933], 11, { duration: 1.2 });
+    } else if (loc === "nagaland") {
+      map.flyTo([25.6751, 94.1086], 11, { duration: 1.2 });
+    } else if (loc === "manipur") {
+      map.flyTo([24.8170, 93.9368], 11, { duration: 1.2 });
+    } else if (loc === "mizoram") {
+      map.flyTo([23.7271, 92.7176], 11, { duration: 1.2 });
+    } else if (loc === "tripura") {
+      map.flyTo([23.8315, 91.2868], 11, { duration: 1.2 });
+    } else {
+      map.flyTo([27.587, 91.860], 14, { duration: 1.2 });
     }
   }, [selectedLocation, map]);
 
@@ -93,9 +110,18 @@ function MapController({ selectedLocation }: { selectedLocation: string }) {
 }
 
 // Static Geo-data definitions
-export const SECTOR_COORDS = {
-  tawang: [27.587, 91.860] as [number, number],
-  gangtok: [27.331, 88.613] as [number, number],
+export const SECTOR_COORDS: Record<string, [number, number]> = {
+  ner: [26.2006, 92.9376],
+  tawang: [27.587, 91.860],
+  arunachal: [27.587, 91.860],
+  gangtok: [27.331, 88.613],
+  sikkim: [27.331, 88.613],
+  assam: [26.1445, 91.7362],
+  meghalaya: [25.5788, 91.8933],
+  nagaland: [25.6751, 94.1086],
+  manipur: [24.8170, 93.9368],
+  mizoram: [23.7271, 92.7176],
+  tripura: [23.8315, 91.2868],
 };
 
 // 4-Tier Landslide Risk Zone Polygons

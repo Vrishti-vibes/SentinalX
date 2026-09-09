@@ -7,15 +7,14 @@ import {
   HazardType,
   SeverityLevel,
 } from "@/types/database";
-import { getDbConfig, supabaseRestQuery } from "./client";
+import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 
-// Global in-memory persistence store (for demo / fallback mode)
+// Global in-memory persistence store (active cache & fallback when database is not configured)
 interface MemoryDbStore {
   reports: Map<string, IncidentReportRecord>;
   history: Map<string, ReportStatusHistoryRecord[]>;
 }
 
-// Helper to initialize seed data
 function createInitialStore(): MemoryDbStore {
   const reports = new Map<string, IncidentReportRecord>();
   const history = new Map<string, ReportStatusHistoryRecord[]>();
@@ -36,7 +35,7 @@ function createInitialStore(): MemoryDbStore {
     responseStatus: "RESPONSE_ASSIGNED",
     assignedTeam: "SDRF Quick Response Unit Alpha (Tawang HQ)",
     estimatedResponseMinutes: 15,
-    storage: "DEMO_IN_MEMORY",
+    storage: isDatabaseConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
   };
 
   reports.set(seedReport.reportId, seedReport);
@@ -90,12 +89,45 @@ function parseSeverity(s?: SeverityLevel | "Low" | "Moderate" | "High" | "Critic
   return 3;
 }
 
-/**
- * Generate Next Sequential Report ID: SX-LS-XXXX
- */
 function generateNextReportId(): string {
   const count = globalStore.reports.size + 2048;
   return `SX-LS-${count}`;
+}
+
+// Helper to map Prisma entity to IncidentReportRecord
+function mapPrismaReport(r: {
+  id: string;
+  reportId: string;
+  hazardType: string;
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  severity: number;
+  description: string;
+  photoUrl: string | null;
+  submittedAt: Date;
+  verificationStatus: string;
+  responseStatus: string;
+  assignedTeam: string | null;
+  estimatedResponseMinutes: number | null;
+}): IncidentReportRecord {
+  return {
+    id: r.id,
+    reportId: r.reportId,
+    hazardType: r.hazardType as HazardType,
+    locationName: r.locationName,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    severity: r.severity as SeverityLevel,
+    description: r.description,
+    photoUrl: r.photoUrl,
+    submittedAt: r.submittedAt.toISOString(),
+    verificationStatus: r.verificationStatus as IncidentReportRecord["verificationStatus"],
+    responseStatus: r.responseStatus as ResponseStatus,
+    assignedTeam: r.assignedTeam,
+    estimatedResponseMinutes: r.estimatedResponseMinutes,
+    storage: "SUPABASE_POSTGRES",
+  };
 }
 
 export const ReportsRepository = {
@@ -103,9 +135,9 @@ export const ReportsRepository = {
    * Create a new field report
    */
   async createReport(payload: CreateReportPayload): Promise<IncidentReportRecord> {
-    const config = getDbConfig();
+    const isConfigured = isDatabaseConfigured;
 
-    // Idempotency check: if clientReportId was provided and exists, return existing
+    // Idempotency check: if clientReportId exists in memory, return it
     if (payload.clientReportId) {
       for (const rep of globalStore.reports.values()) {
         if (rep.clientReportId === payload.clientReportId) {
@@ -133,7 +165,7 @@ export const ReportsRepository = {
       responseStatus: "SUBMITTED",
       assignedTeam: null,
       estimatedResponseMinutes: 20,
-      storage: config.isConfigured ? "SUPABASE_POSTGRES" : "DEMO_IN_MEMORY",
+      storage: isConfigured ? "SUPABASE_POSTGRES" : "DATABASE_NOT_CONFIGURED",
       clientReportId: payload.clientReportId || null,
     };
 
@@ -145,43 +177,40 @@ export const ReportsRepository = {
       timestamp: now,
     };
 
-    // Always store in memory store as immediate cache/fallback
+    // Store in memory cache
     globalStore.reports.set(reportId, newRecord);
     globalStore.history.set(reportId, [initialHistory]);
 
-    // If Supabase is configured, attempt remote insert
-    if (config.isConfigured) {
-      const dbPayload = {
-        report_id: newRecord.reportId,
-        hazard_type: newRecord.hazardType,
-        location_name: newRecord.locationName,
-        latitude: newRecord.latitude,
-        longitude: newRecord.longitude,
-        severity: newRecord.severity,
-        description: newRecord.description,
-        photo_url: newRecord.photoUrl,
-        verification_status: newRecord.verificationStatus,
-        response_status: newRecord.responseStatus,
-      };
-
-      const { error } = await supabaseRestQuery("incident_reports", {
-        method: "POST",
-        body: dbPayload,
-      });
-
-      if (error) {
-        console.warn("[ReportsRepository] Supabase insert failed, retained in memory:", error);
-        newRecord.storage = "DEMO_IN_MEMORY";
-      } else {
-        // Also insert history in Supabase
-        await supabaseRestQuery("report_status_history", {
-          method: "POST",
-          body: {
-            report_id: reportId,
-            status: initialHistory.status,
-            message: initialHistory.message,
+    // Persist to Supabase via Prisma if database is configured
+    if (isConfigured) {
+      try {
+        const created = await prisma.incidentReport.create({
+          data: {
+            reportId: newRecord.reportId,
+            hazardType: newRecord.hazardType,
+            locationName: newRecord.locationName,
+            latitude: newRecord.latitude,
+            longitude: newRecord.longitude,
+            severity: newRecord.severity,
+            description: newRecord.description,
+            photoUrl: newRecord.photoUrl,
+            verificationStatus: newRecord.verificationStatus,
+            responseStatus: newRecord.responseStatus,
+            assignedTeam: newRecord.assignedTeam,
+            estimatedResponseMinutes: newRecord.estimatedResponseMinutes,
+            statusHistory: {
+              create: {
+                status: initialHistory.status,
+                message: initialHistory.message,
+              },
+            },
           },
         });
+        newRecord.id = created.id;
+        newRecord.storage = "SUPABASE_POSTGRES";
+      } catch (err) {
+        console.warn("[ReportsRepository] Prisma insert failed, retained in memory:", err);
+        newRecord.storage = "DATABASE_NOT_CONFIGURED";
       }
     }
 
@@ -192,38 +221,19 @@ export const ReportsRepository = {
    * Get all reports
    */
   async getReports(options: { status?: ResponseStatus; limit?: number } = {}): Promise<IncidentReportRecord[]> {
-    const config = getDbConfig();
+    if (isDatabaseConfigured) {
+      try {
+        const dbReports = await prisma.incidentReport.findMany({
+          where: options.status ? { responseStatus: options.status } : undefined,
+          orderBy: { submittedAt: "desc" },
+          take: options.limit,
+        });
 
-    if (config.isConfigured) {
-      const query: Record<string, string> = {
-        select: "*",
-        order: "submitted_at.desc",
-      };
-      if (options.status) query.response_status = `eq.${options.status}`;
-      if (options.limit) query.limit = String(options.limit);
-
-      const { data, error } = await supabaseRestQuery<Record<string, unknown>[]>("incident_reports", {
-        query,
-      });
-
-      if (!error && Array.isArray(data)) {
-        return data.map((d) => ({
-          id: String(d.id),
-          reportId: String(d.report_id),
-          hazardType: d.hazard_type as HazardType,
-          locationName: String(d.location_name),
-          latitude: Number(d.latitude),
-          longitude: Number(d.longitude),
-          severity: Number(d.severity) as SeverityLevel,
-          description: String(d.description),
-          photoUrl: d.photo_url ? String(d.photo_url) : null,
-          submittedAt: String(d.submitted_at),
-          verificationStatus: d.verification_status as IncidentReportRecord["verificationStatus"],
-          responseStatus: d.response_status as ResponseStatus,
-          assignedTeam: d.assigned_team ? String(d.assigned_team) : null,
-          estimatedResponseMinutes: d.estimated_response_minutes ? Number(d.estimated_response_minutes) : null,
-          storage: "SUPABASE_POSTGRES",
-        }));
+        if (dbReports && dbReports.length > 0) {
+          return dbReports.map(mapPrismaReport);
+        }
+      } catch (err) {
+        console.warn("[ReportsRepository] Prisma getReports failed, using local store:", err);
       }
     }
 
@@ -248,114 +258,109 @@ export const ReportsRepository = {
   async getReportById(
     reportId: string
   ): Promise<{ report: IncidentReportRecord | null; history: ReportStatusHistoryRecord[] }> {
-    const config = getDbConfig();
-    const upperId = reportId.toUpperCase();
-
-    let report = globalStore.reports.get(upperId) || null;
-    let history = globalStore.history.get(upperId) || [];
-
-    if (config.isConfigured) {
-      const { data, error } = await supabaseRestQuery<Record<string, unknown>[]>("incident_reports", {
-        query: { report_id: `eq.${upperId}`, limit: "1" },
-      });
-
-      if (!error && data && data.length > 0) {
-        const d = data[0];
-        report = {
-          id: String(d.id),
-          reportId: String(d.report_id),
-          hazardType: d.hazard_type as HazardType,
-          locationName: String(d.location_name),
-          latitude: Number(d.latitude),
-          longitude: Number(d.longitude),
-          severity: Number(d.severity) as SeverityLevel,
-          description: String(d.description),
-          photoUrl: d.photo_url ? String(d.photo_url) : null,
-          submittedAt: String(d.submitted_at),
-          verificationStatus: d.verification_status as IncidentReportRecord["verificationStatus"],
-          responseStatus: d.response_status as ResponseStatus,
-          assignedTeam: d.assigned_team ? String(d.assigned_team) : null,
-          estimatedResponseMinutes: d.estimated_response_minutes ? Number(d.estimated_response_minutes) : null,
-          storage: "SUPABASE_POSTGRES",
-        };
-
-        // Fetch history
-        const { data: histData } = await supabaseRestQuery<Record<string, unknown>[]>("report_status_history", {
-          query: { report_id: `eq.${upperId}`, order: "timestamp.asc" },
+    if (isDatabaseConfigured) {
+      try {
+        const dbReport = await prisma.incidentReport.findUnique({
+          where: { reportId },
+          include: {
+            statusHistory: {
+              orderBy: { timestamp: "asc" },
+            },
+          },
         });
 
-        if (Array.isArray(histData)) {
-          history = histData.map((h) => ({
-            id: String(h.id),
-            reportId: String(h.report_id),
+        if (dbReport) {
+          const report = mapPrismaReport(dbReport);
+          const history: ReportStatusHistoryRecord[] = dbReport.statusHistory.map((h) => ({
+            id: h.id,
+            reportId: h.reportId,
             status: h.status as ResponseStatus,
-            message: String(h.message),
-            timestamp: String(h.timestamp),
+            message: h.message,
+            timestamp: h.timestamp.toISOString(),
           }));
+          return { report, history };
         }
+      } catch (err) {
+        console.warn("[ReportsRepository] Prisma getReportById failed:", err);
       }
     }
 
+    const report = globalStore.reports.get(reportId) || null;
+    const history = globalStore.history.get(reportId) || [];
     return { report, history };
   },
 
   /**
-   * Update report status and append to history
+   * Update report status & record audit history
    */
   async updateReportStatus(
     reportId: string,
-    update: UpdateReportStatusPayload
+    payload: UpdateReportStatusPayload
   ): Promise<{ report: IncidentReportRecord | null; history: ReportStatusHistoryRecord[] }> {
-    const upperId = reportId.toUpperCase();
-    const existing = globalStore.reports.get(upperId);
-    const now = new Date().toISOString();
-
+    const existing = globalStore.reports.get(reportId);
     if (!existing) {
-      return { report: null, history: [] };
+      // Check if it exists in DB
+      if (isDatabaseConfigured) {
+        try {
+          const dbReport = await prisma.incidentReport.findUnique({ where: { reportId } });
+          if (dbReport) {
+            globalStore.reports.set(reportId, mapPrismaReport(dbReport));
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
 
-    if (update.verificationStatus) existing.verificationStatus = update.verificationStatus;
-    if (update.responseStatus) existing.responseStatus = update.responseStatus;
-    if (update.assignedTeam !== undefined) existing.assignedTeam = update.assignedTeam;
-    if (update.estimatedResponseMinutes !== undefined)
-      existing.estimatedResponseMinutes = update.estimatedResponseMinutes;
+    const report = globalStore.reports.get(reportId);
+    if (!report) return { report: null, history: [] };
+
+    const now = new Date().toISOString();
+
+    if (payload.verificationStatus) report.verificationStatus = payload.verificationStatus;
+    if (payload.responseStatus) report.responseStatus = payload.responseStatus;
+    if (payload.assignedTeam !== undefined) report.assignedTeam = payload.assignedTeam;
+    if (payload.estimatedResponseMinutes !== undefined) {
+      report.estimatedResponseMinutes = payload.estimatedResponseMinutes;
+    }
 
     const newHistoryItem: ReportStatusHistoryRecord = {
       id: `hist-${Date.now()}`,
-      reportId: upperId,
-      status: existing.responseStatus,
-      message: update.statusMessage || `Status updated to ${existing.responseStatus}.`,
+      reportId,
+      status: payload.responseStatus || report.responseStatus,
+      message:
+        payload.statusMessage ||
+        `Status transitioned to ${payload.responseStatus || report.responseStatus}`,
       timestamp: now,
     };
 
-    const currentHistory = globalStore.history.get(upperId) || [];
+    const currentHistory = globalStore.history.get(reportId) || [];
     currentHistory.push(newHistoryItem);
-    globalStore.history.set(upperId, currentHistory);
+    globalStore.history.set(reportId, currentHistory);
 
-    const config = getDbConfig();
-    if (config.isConfigured) {
-      await supabaseRestQuery("incident_reports", {
-        method: "PATCH",
-        query: { report_id: `eq.${upperId}` },
-        body: {
-          verification_status: existing.verificationStatus,
-          response_status: existing.responseStatus,
-          assigned_team: existing.assignedTeam,
-          estimated_response_minutes: existing.estimatedResponseMinutes,
-          updated_at: now,
-        },
-      });
-
-      await supabaseRestQuery("report_status_history", {
-        method: "POST",
-        body: {
-          report_id: upperId,
-          status: newHistoryItem.status,
-          message: newHistoryItem.message,
-        },
-      });
+    // Persist update to Supabase via Prisma
+    if (isDatabaseConfigured) {
+      try {
+        await prisma.incidentReport.update({
+          where: { reportId },
+          data: {
+            verificationStatus: payload.verificationStatus,
+            responseStatus: payload.responseStatus,
+            assignedTeam: payload.assignedTeam,
+            estimatedResponseMinutes: payload.estimatedResponseMinutes,
+            statusHistory: {
+              create: {
+                status: newHistoryItem.status,
+                message: newHistoryItem.message,
+              },
+            },
+          },
+        });
+      } catch (err) {
+        console.warn("[ReportsRepository] Prisma update failed:", err);
+      }
     }
 
-    return { report: existing, history: currentHistory };
+    return { report, history: currentHistory };
   },
 };
