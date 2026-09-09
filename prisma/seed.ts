@@ -212,8 +212,9 @@ async function main() {
   console.log("Starting SentinalX PostgreSQL Database Seed...");
 
   const teamMap = new Map<string, string>();
+  const db = prisma as any;
   for (const t of RESPONSE_TEAMS) {
-    const team = await prisma.responseTeam.upsert({
+    const team = await db.responseTeam.upsert({
       where: { name: t.name },
       update: {
         sector: t.sector,
@@ -288,11 +289,11 @@ async function main() {
     }
 
     if (assignedTeamId && r.assignedTeamName) {
-      await prisma.reportAssignment.deleteMany({
+      await db.reportAssignment.deleteMany({
         where: { reportId: r.reportId },
       });
 
-      await prisma.reportAssignment.create({
+      await db.reportAssignment.create({
         data: {
           reportId: r.reportId,
           teamId: assignedTeamId,
